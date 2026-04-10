@@ -24,16 +24,17 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
 
   const now = new Date();
   try {
-    const result = await categoriesCollection().insertOne({
+    const category = {
       _id: new ObjectId(),
       name,
       slug: categorySlug,
       description,
       createdAt: now,
       updatedAt: now
-    });
+    };
 
-    res.status(201).json({ id: result.insertedId.toString(), name, slug: categorySlug, description });
+    await categoriesCollection().insertOne(category);
+    res.status(201).json({ id: category._id.toString(), name, slug: categorySlug, description });
   } catch (error) {
     if (error instanceof MongoServerError && error.code === 11000) {
       res.status(409).json({ message: 'Category slug already exists' });

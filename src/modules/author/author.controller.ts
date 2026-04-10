@@ -11,17 +11,18 @@ const readParam = (value: string | string[] | undefined): string => (Array.isArr
 export const createAuthor = async (req: Request, res: Response): Promise<void> => {
   const { name, bio, avatarUrl } = req.body;
   const now = new Date();
-
-  const result = await authorsCollection().insertOne({
+  const author = {
     _id: new ObjectId(),
     name,
     bio,
     avatarUrl,
     createdAt: now,
     updatedAt: now
-  });
+  };
 
-  res.status(201).json({ id: result.insertedId.toString(), name, bio, avatarUrl });
+  await authorsCollection().insertOne(author);
+
+  res.status(201).json({ id: author._id.toString(), name, bio, avatarUrl });
 };
 
 export const listAuthors = async (_req: Request, res: Response): Promise<void> => {

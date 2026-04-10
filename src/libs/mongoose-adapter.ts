@@ -1,4 +1,7 @@
-import type { Aggregate, FilterQuery, Model, Query, UpdateQuery } from 'mongoose';
+import type { Aggregate, Model, Query, UpdateQuery } from 'mongoose';
+
+type QueryFilter = Record<string, any>;
+type ProjectionFields = string | readonly string[] | Record<string, string | number | boolean | object>;
 
 export class QueryAdapter<T> {
   constructor(private query: Query<any, any>) {}
@@ -18,12 +21,12 @@ export class QueryAdapter<T> {
     return this;
   }
 
-  project(fields: Record<string, unknown>): this {
+  project(fields: ProjectionFields): this {
     this.query = this.query.select(fields);
     return this;
   }
 
-  select(fields: string | Record<string, unknown>): this {
+  select(fields: ProjectionFields): this {
     this.query = this.query.select(fields);
     return this;
   }
@@ -42,34 +45,34 @@ export class AggregateAdapter<T> {
 }
 
 export const createCollectionAdapter = <T>(model: Model<T>) => ({
-  findOne: async (filter: FilterQuery<T>): Promise<T | null> =>
-    (await model.findOne(filter).lean().exec()) as T | null,
-  find: (filter: FilterQuery<T>): QueryAdapter<T> => new QueryAdapter<T>(model.find(filter)),
+  findOne: async (filter: QueryFilter): Promise<T | null> =>
+    (await model.findOne(filter as any).lean().exec()) as T | null,
+  find: (filter: QueryFilter): QueryAdapter<T> => new QueryAdapter<T>(model.find(filter as any)),
   insertOne: async (doc: Partial<T>): Promise<{ insertedId: unknown }> => {
     const created = await model.create(doc);
     return { insertedId: (created as any)._id };
   },
   findOneAndUpdate: async (
-    filter: FilterQuery<T>,
+    filter: QueryFilter,
     update: UpdateQuery<T>,
     options: { returnDocument?: 'before' | 'after' } = { returnDocument: 'after' }
   ): Promise<T | null> =>
     (await model
-      .findOneAndUpdate(filter, update, {
+      .findOneAndUpdate(filter as any, update, {
         new: options.returnDocument === 'after',
         lean: true
       })
       .exec()) as T | null,
-  deleteOne: async (filter: FilterQuery<T>): Promise<{ deletedCount: number }> => {
-    const result = await model.deleteOne(filter).exec();
+  deleteOne: async (filter: QueryFilter): Promise<{ deletedCount: number }> => {
+    const result = await model.deleteOne(filter as any).exec();
     return { deletedCount: result.deletedCount ?? 0 };
   },
-  findOneAndDelete: async (filter: FilterQuery<T>): Promise<T | null> =>
-    (await model.findOneAndDelete(filter).lean().exec()) as T | null,
-  updateOne: async (filter: FilterQuery<T>, update: UpdateQuery<T>): Promise<{ matchedCount: number }> => {
-    const result = await model.updateOne(filter, update).exec();
+  findOneAndDelete: async (filter: QueryFilter): Promise<T | null> =>
+    (await model.findOneAndDelete(filter as any).lean().exec()) as T | null,
+  updateOne: async (filter: QueryFilter, update: UpdateQuery<T>): Promise<{ matchedCount: number }> => {
+    const result = await model.updateOne(filter as any, update as any).exec();
     return { matchedCount: result.matchedCount ?? 0 };
   },
-  countDocuments: async (filter: FilterQuery<T>): Promise<number> => model.countDocuments(filter).exec(),
+  countDocuments: async (filter: QueryFilter): Promise<number> => model.countDocuments(filter as any).exec(),
   aggregate: <R = T>(pipeline: unknown[]): AggregateAdapter<R> => new AggregateAdapter<R>(model.aggregate(pipeline as any) as Aggregate<R[]>)
 });

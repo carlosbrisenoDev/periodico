@@ -13,17 +13,19 @@ export const uploadImage = async (req: Request, res: Response): Promise<void> =>
   }
 
   const url = `/uploads/featured/${req.file.filename}`;
-  const result = await imagesCollection().insertOne({
+  const image = {
     _id: new ObjectId(),
     filename: req.file.filename,
     url,
     mimeType: req.file.mimetype,
     size: req.file.size,
     createdAt: new Date()
-  });
+  };
+
+  await imagesCollection().insertOne(image);
 
   res.status(201).json({
-    id: result.insertedId.toString(),
+    id: image._id.toString(),
     filename: req.file.filename,
     url
   });
