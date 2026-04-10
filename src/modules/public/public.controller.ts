@@ -1,0 +1,280 @@
+import { Request, Response } from 'express';
+import { ObjectId } from 'mongodb';
+import {
+  isPublishableFilter,
+  publicArticlesCollection,
+  publicAuthorsCollection,
+  publicCategoriesCollection,
+  serializeObjectId
+} from './public.model.js';
+
+const PUBLIC_API_BASE_PATH = '/api/v1/public';
+
+const toPublicArticle = async (article: {
+  _id: ObjectId;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featuredImageUrl: string | null;
+  isFeatured: boolean;
+  authorId: ObjectId;
+  categoryIds: ObjectId[];
+  publishedAt: Date | null;
+  scheduledAt: Date | null;
+  views: number;
+  createdAt: Date;
+  updatedAt: Date;
+}): Promise<Record<string, unknown>> => {
+  const [author, categories] = await Promise.all([
+    publicAuthorsCollection().findOne({ _id: article.authorId }),
+    publicCategoriesCollection()
+      .find({ _id: { $in: article.categoryIds } })
+      .project({ name: 1, slug: 1 })
+      .toArray()
+  ]);
+
+  return {
+    id: article._id.toString(),
+    title: article.title,
+    slug: article.slug,
+    excerpt: article.excerpt,
+    content: article.content,
+    featuredImageUrl: article.featuredImageUrl,
+    isFeatured: article.isFeatured,
+    author: author
+      ? {
+          id: serializeObjectId(author._id),
+          name: author.name
+        }
+      : null,
+    categories: categories.map((category) => ({
+      id: serializeObjectId(category._id),
+      name: category.name,
+      slug: category.slug
+    })),
+    publishedAt: article.publishedAt,
+    scheduledAt: article.scheduledAt,
+    views: article.views,
+    createdAt: article.createdAt,
+    updatedAt: article.updatedAt
+  };
+};
+
+const getPublicArticles = async (options: {
+  limit: number;
+  sort: Record<string, 1 | -1>;
+  isFeatured?: boolean;
+}): Promise<Record<string, unknown>[]> => {
+  const filter: Record<string, unknown> = isPublishableFilter();
+  if (options.isFeatured) {
+    filter.isFeatured = true;
+  }
+
+  const articles = await publicArticlesCollection()
+    .find(filter)
+    .sort(options.sort)
+    .limit(options.limit)
+    .toArray();
+
+  return Promise.all(articles.map(toPublicArticle));
+};
+
+export const getHome = async (_req: Request, res: Response): Promise<void> => {
+  const [recent, featured, latest] = await Promise.all([
+    getPublicArticles({ limit: 12, sort: { publishedAt: -1, createdAt: -1 } }),
+    getPublicArticles({
+      limit: 5,
+      sort: { publishedAt: -1, createdAt: -1 },
+      isFeatured: true
+    }),
+    getPublicArticles({ limit: 8, sort: { createdAt: -1 } })
+  ]);
+
+  res.status(200).json({
+    recent,
+    featured,
+    latest
+  });
+};
+
+export const getFeatured = async (_req: Request, res: Response): Promise<void> => {
+  const featured = await getPublicArticles({
+    limit: 5,
+    sort: { publishedAt: -1, createdAt: -1 },
+    isFeatured: true
+  });
+  res.status(200).json(featured);
+};
+
+export const getLatest = async (_req: Request, res: Response): Promise<void> => {
+  const latest = await getPublicArticles({ limit: 8, sort: { createdAt: -1 } });
+  res.status(200).json(latest);
+};
+
+export const getCategories = async (_req: Request, res: Response): Promise<void> => {
+  const categoriesSummary = await publicArticlesCollection()
+    .aggregate<{ _id: ObjectId; total: number }>([
+      { $match: isPublishableFilter() },
+      { $unwind: '$categoryIds' },
+      { $group: { _id: '$categoryIds', total: { $sum: 1 } } },
+      { $sort: { total: -1 } }
+    ])
+    .toArray();
+
+  if (!categoriesSummary.length) {
+    res.status(200).json([]);
+    return;
+  }
+
+  const categories = await publicCategoriesCollection()
+    .find({ _id: { $in: categoriesSummary.map((category) => category._id) } })
+    .toArray();
+
+  const categoriesById = new Map(categories.map((category) => [category._id.toString(), category]));
+
+  res.status(200).json(
+    categoriesSummary
+      .map((item) => {
+        const category = categoriesById.get(item._id.toString());
+        if (!category) {
+          return null;
+        }
+
+        return {
+          id: category._id.toString(),
+          name: category.name,
+          slug: category.slug,
+          description: category.description ?? null,
+          articleCount: item.total
+        };
+      })
+      .filter((category): category is NonNullable<typeof category> => category !== null)
+  );
+};
+
+export const getArticleBySlug = async (req: Request, res: Response): Promise<void> => {
+  const { slug } = req.params;
+  const article = await publicArticlesCollection().findOne({
+    slug,
+    ...isPublishableFilter()
+  });
+
+  if (!article) {
+    res.status(404).json({ message: 'Article not found' });
+    return;
+  }
+
+  await publicArticlesCollection().updateOne({ _id: article._id }, { $inc: { views: 1 } });
+  res.status(200).json(await toPublicArticle({ ...article, views: article.views + 1 }));
+};
+
+export const getArticlesByCategorySlug = async (req: Request, res: Response): Promise<void> => {
+  const { slug } = req.params;
+  const category = await publicCategoriesCollection().findOne({ slug });
+  if (!category) {
+    res.status(404).json({ message: 'Category not found' });
+    return;
+  }
+
+  const articles = await publicArticlesCollection()
+    .find({ ...isPublishableFilter(), categoryIds: category._id })
+    .sort({ publishedAt: -1, createdAt: -1 })
+    .toArray();
+
+  res.status(200).json({
+    category: {
+      id: category._id.toString(),
+      name: category.name,
+      slug: category.slug
+    },
+    articles: await Promise.all(articles.map(toPublicArticle))
+  });
+};
+
+export const searchArticles = async (req: Request, res: Response): Promise<void> => {
+  const query = String(req.query.q || '').trim();
+  const limit = Number(req.query.limit || 10);
+
+  const regex = new RegExp(query, 'i');
+  const articles = await publicArticlesCollection()
+    .find({
+      ...isPublishableFilter(),
+      $or: [{ title: { $regex: regex } }, { excerpt: { $regex: regex } }]
+    })
+    .sort({ publishedAt: -1, createdAt: -1 })
+    .limit(limit)
+    .toArray();
+
+  res.status(200).json({
+    q: query,
+    total: articles.length,
+    items: await Promise.all(articles.map(toPublicArticle))
+  });
+};
+
+export const getTrending = async (req: Request, res: Response): Promise<void> => {
+  const limit = Number(req.query.limit || 10);
+  const trending = await getPublicArticles({
+    limit,
+    sort: { views: -1, publishedAt: -1, createdAt: -1 }
+  });
+
+  res.status(200).json(trending);
+};
+
+export const getArchive = async (req: Request, res: Response): Promise<void> => {
+  const year = Number(req.params.year);
+  const month = Number(req.params.month);
+
+  const start = new Date(Date.UTC(year, month - 1, 1));
+  const end = new Date(Date.UTC(year, month, 1));
+
+  const archiveDateFilter = {
+    $or: [
+      { publishedAt: { $gte: start, $lt: end } },
+      { publishedAt: null, scheduledAt: { $gte: start, $lt: end } }
+    ]
+  };
+
+  const articles = await publicArticlesCollection()
+    .find({
+      $and: [isPublishableFilter(), archiveDateFilter]
+    })
+    .sort({ publishedAt: -1, scheduledAt: -1, createdAt: -1 })
+    .toArray();
+
+  res.status(200).json({
+    year,
+    month,
+    total: articles.length,
+    items: await Promise.all(articles.map(toPublicArticle))
+  });
+};
+
+export const getSitemap = async (_req: Request, res: Response): Promise<void> => {
+  const [articles, categories] = await Promise.all([
+    publicArticlesCollection()
+      .find(isPublishableFilter())
+      .project({ slug: 1 })
+      .sort({ publishedAt: -1, createdAt: -1 })
+      .toArray(),
+    publicCategoriesCollection().find({}).project({ slug: 1 }).sort({ name: 1 }).toArray()
+  ]);
+
+  const urls = [
+    `${PUBLIC_API_BASE_PATH}/home`,
+    `${PUBLIC_API_BASE_PATH}/categories`,
+    `${PUBLIC_API_BASE_PATH}/featured`,
+    `${PUBLIC_API_BASE_PATH}/latest`,
+    `${PUBLIC_API_BASE_PATH}/trending`,
+    ...categories.map((category) => `${PUBLIC_API_BASE_PATH}/category/${category.slug}`),
+    ...articles.map((article) => `${PUBLIC_API_BASE_PATH}/article/${article.slug}`)
+  ];
+
+  res.status(200).json({
+    generatedAt: new Date().toISOString(),
+    total: urls.length,
+    urls
+  });
+};

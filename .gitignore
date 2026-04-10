@@ -1,0 +1,15 @@
+.env
+
+node_modules
+
+dist
+
+uploads
+
+copilot.session.txt
+
+test-assets
+
+package_lock.json
+
+agents.md
