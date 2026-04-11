@@ -12,10 +12,10 @@ Está construida con **views y rutas reales** (sin archivos `.css`; solo estilos
 
 ## Configuración
 
-- Variable opcional: `VITE_API_BASE_URL` (base final de la API).
+- Variable opcional: `API_URL` (base final del backend). También funciona `VITE_API_BASE_URL` por compatibilidad.
 - Variable opcional: `VITE_PROXY_TARGET` (solo desarrollo, default `http://localhost:3000`).
 - En `npm run dev`, `/api` y `/uploads` se proxyean al backend para compartir cookies en el navegador sin CORS manual en frontend.
-- Si `VITE_API_BASE_URL` no existe, el frontend usa el mismo origen (`window.location.origin`).
+- Si no existe ninguna variable, el frontend usa el mismo origen (`window.location.origin`).
 
 ## Rutas principales
 

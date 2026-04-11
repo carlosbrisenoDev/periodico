@@ -6,6 +6,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:3000'
 
   return {
+    envPrefix: ['VITE_', 'API_'],
     plugins: [react()],
     server: {
       proxy: {
