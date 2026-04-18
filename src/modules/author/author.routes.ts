@@ -7,9 +7,9 @@ import { createAuthor, deleteAuthor, getAuthorArticles, getAuthorById, listAutho
 
 const router = Router();
 
-router.get('/', listAuthors);
+router.get('/', validateToken, requireRole('admin', 'editor'), listAuthors);
 router.get('/:id/articles', validateParamsSchema(authorIdSchema), validateQuerySchema(listAuthorArticlesQuerySchema), getAuthorArticles);
-router.get('/:id', validateParamsSchema(authorIdSchema), getAuthorById);
+router.get('/:id', validateToken, requireRole('admin', 'editor'), validateParamsSchema(authorIdSchema), getAuthorById);
 router.post('/', validateToken, requireRole('admin'), validateBodySchema(createAuthorSchema), createAuthor);
 router.patch(
   '/:id',

@@ -11,10 +11,16 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must have at least 16 characters'),
   JWT_EXPIRES_IN: z.string().default('1d'),
   COOKIE_NAME: z.string().default('access_token'),
+  SUBSCRIBER_COOKIE_NAME: z.string().default('subscriber_token'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_PASSWORD: z.string().min(8).optional(),
-  ADMIN_NAME: z.string().default('Admin')
+  ADMIN_NAME: z.string().default('Admin'),
+  EMAIL_HOST: z.string(),
+  EMAIL_PORT: z.string().default('localhost'),
+  EMAIL_USER: z.string(),
+  EMAIL_PASS: z.string(),
+  EMAIL_FROM: z.string()
 });
 
 const parsed = envSchema.safeParse(process.env);

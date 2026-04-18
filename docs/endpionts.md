@@ -11,6 +11,7 @@ Este archivo es el **índice principal** para pruebas manuales de la API.
 - [Author](./src/modules/author/all.md)
 - [Image](./src/modules/image/all.md)
 - [Public](./src/modules/public/all.md)
+- [Subscribers](./src/modules/subscribers/all.md)
 
 ## Flujo de datos (Mermaid)
 
@@ -24,9 +25,12 @@ flowchart LR
   A --> M5[Author]
   A --> M6[Image]
   A --> M7[Public]
+  A --> M8[Subscribers]
 
   M1 --> J[JWT Cookie]
+  M8 --> SJ[Subscriber JWT Cookie]
   J --> A
+  SJ --> A
 
   M2 --> DB[(MongoDB)]
   M3 --> DB
@@ -34,6 +38,7 @@ flowchart LR
   M5 --> DB
   M6 --> DB
   M7 --> DB
+  M8 --> DB
 
   M6 --> FS[(uploads/featured)]
   FS --> M7
@@ -86,6 +91,18 @@ erDiagram
     date scheduledAt
     date publishedAt
     number views
+    date createdAt
+    date updatedAt
+  }
+
+  SUBSCRIBERS {
+    ObjectId _id PK
+    string username UK
+    string email UK
+    string passwordHash
+    string role
+    string status
+    boolean active
     date createdAt
     date updatedAt
   }

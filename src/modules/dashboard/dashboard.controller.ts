@@ -8,7 +8,7 @@ export const getSummary = async (_req: AuthenticatedRequest, res: Response): Pro
     articlesCollection().countDocuments({ status: 'published' }),
     articlesCollection().countDocuments({ status: 'scheduled' }),
     articlesCollection()
-      .find({}, { projection: { title: 1, slug: 1, status: 1, createdAt: 1 } })
+      .find({}).project({ title: 1, slug: 1, status: 1, createdAt: 1 })
       .sort({ createdAt: -1 })
       .limit(10)
       .toArray()

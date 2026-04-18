@@ -3,7 +3,8 @@
 ## `GET /api/v1/author`
 **Propósito:** listar autores (ordenados por `createdAt` desc).
 
-**Headers requeridos:** ninguno.
+**Headers requeridos:**
+- `Cookie: access_token=<jwt admin|editor>`
 
 **Campos requeridos:**
 - Body: none
@@ -11,22 +12,26 @@
 - Query: none
 
 **Respuesta común:**
-- Success `200`: `[{ id, name, bio, avatarUrl, createdAt, updatedAt }]`
+- Success `200`: `[{ id, name, bio, avatarUrl, userId, createdAt, updatedAt }]`
 - Errores comunes: `500 { message: "Internal server error", error }`
 
 ## `GET /api/v1/author/:id`
 **Propósito:** obtener un autor por id.
 
-**Headers requeridos:** ninguno.
+**Headers requeridos:**
+- `Cookie: access_token=<jwt admin|editor>`
 
 **Campos requeridos:**
 - Params: `id` (string no vacío; además debe ser ObjectId válido)
 
 **Respuesta común:**
-- Success `200`: `{ id, name, bio, avatarUrl, createdAt, updatedAt }`
+- Success `200`: `{ id, name, bio, avatarUrl, userId, createdAt, updatedAt }`
 - Errores comunes:
   - `400 { message: "Validation error", errors[] }` (params inválidos por schema)
   - `400 { message: "Invalid author id" }`
+  - `401 { message: "Unauthorized" }`
+  - `401 { message: "Invalid token" }`
+  - `403 { message: "Forbidden" }`
   - `404 { message: "Author not found" }`
 
 ## `GET /api/v1/author/:id/articles`
@@ -62,9 +67,10 @@
   - `name` (string, min 2)
   - `bio` (string, opcional, max 500)
   - `avatarUrl` (string URL, opcional)
+  - `userId` (ObjectId de `users`, opcional o `null` para sin asignar)
 
 **Respuesta común:**
-- Success `201`: `{ id, name, bio, avatarUrl }`
+- Success `201`: `{ id, name, bio, avatarUrl, userId }`
 - Errores comunes:
   - `400 { message: "Validation error", errors[] }`
   - `401 { message: "Unauthorized" }`
@@ -80,10 +86,10 @@
 
 **Campos requeridos:**
 - Params: `id` (string no vacío; ObjectId válido)
-- Body (todos opcionales): `name` (min 2), `bio` (max 500), `avatarUrl` (URL)
+- Body (todos opcionales): `name` (min 2), `bio` (max 500), `avatarUrl` (URL), `userId` (ObjectId|null)
 
 **Respuesta común:**
-- Success `200`: `{ id, name, bio, avatarUrl, createdAt, updatedAt }`
+- Success `200`: `{ id, name, bio, avatarUrl, userId, createdAt, updatedAt }`
 - Errores comunes:
   - `400 { message: "Validation error", errors[] }`
   - `400 { message: "Invalid author id" }`

@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "src/modules/category/all.md",
+                "file": "src/modules/article/all.md",
                 "mode": "source",
                 "source": false
               },
@@ -182,13 +182,13 @@
   },
   "active": "15dd4b0f1b348a2f",
   "lastOpenFiles": [
+    "endpionts.md",
+    "src/modules/category/all.md",
     "src/modules/author/all.md",
     "Pasted image 20260409215142.png",
     "src/modules/article/all.md",
     "src/modules/public/all.md",
-    "endpionts.md",
     "src/modules/image/all.md",
-    "src/modules/category/all.md",
     "src/modules/dashboard/all.md",
     "src/modules/auth/all.md"
   ]

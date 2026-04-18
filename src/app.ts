@@ -11,6 +11,7 @@ import categoryRoutes from './modules/category/index.js';
 import imageRoutes from './modules/image/index.js';
 import articleRoutes from './modules/article/index.js';
 import publicRoutes from './modules/public/index.js';
+import subscriberRoutes from './modules/subscribers/index.js';
 import { corsMiddleware } from './middlewares/cors.js';
 
 export const app = express();
@@ -33,6 +34,7 @@ app.use('/api/v1/category', categoryRoutes);
 app.use('/api/v1/image', imageRoutes);
 app.use('/api/v1/article', articleRoutes);
 app.use('/api/v1/public', publicRoutes);
+app.use('/api/v1/subscribers', subscriberRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Not found' });

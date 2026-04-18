@@ -2,14 +2,55 @@ import { Request, Response } from 'express';
 import { Filter, ObjectId } from 'mongodb';
 import { env } from '../../config.js';
 import { verifyAuthToken } from '../../libs/jwt.js';
+import { AuthenticatedRequest } from '../../middlewares/validateToken.js';
 import { isPublishableFilter } from '../public/public.model.js';
 import { ArticleDoc, articlesCollection } from '../article/article.model.js';
 import { authorsCollection } from './author.model.js';
 
 const readParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] : value ?? '');
 
-export const createAuthor = async (req: Request, res: Response): Promise<void> => {
+const parseOptionalObjectId = (value: unknown): ObjectId | null | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null || value === '') {
+    return null;
+  }
+
+  if (typeof value !== 'string' || !ObjectId.isValid(value)) {
+    return undefined;
+  }
+
+  return new ObjectId(value);
+};
+
+const mapAuthorResponse = (author: {
+  _id: ObjectId;
+  name: string;
+  bio?: string;
+  avatarUrl?: string;
+  userId?: ObjectId | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) => ({
+  id: author._id.toString(),
+  name: author.name,
+  bio: author.bio,
+  avatarUrl: author.avatarUrl,
+  userId: author.userId ? author.userId.toString() : null,
+  createdAt: author.createdAt,
+  updatedAt: author.updatedAt
+});
+
+export const createAuthor = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { name, bio, avatarUrl } = req.body;
+  const parsedUserId = parseOptionalObjectId(req.body.userId);
+  if (req.body.userId !== undefined && parsedUserId === undefined) {
+    res.status(400).json({ message: 'Invalid user id' });
+    return;
+  }
+
   const now = new Date();
 
   const result = await authorsCollection().insertOne({
@@ -17,48 +58,49 @@ export const createAuthor = async (req: Request, res: Response): Promise<void> =
     name,
     bio,
     avatarUrl,
+    userId: parsedUserId ?? null,
     createdAt: now,
     updatedAt: now
   });
 
-  res.status(201).json({ id: result.insertedId.toString(), name, bio, avatarUrl });
+  res.status(201).json({ id: result.insertedId.toString(), name, bio, avatarUrl, userId: parsedUserId?.toString() ?? null });
 };
 
-export const listAuthors = async (_req: Request, res: Response): Promise<void> => {
-  const authors = await authorsCollection().find({}).sort({ createdAt: -1 }).toArray();
-  res.status(200).json(
-    authors.map((author) => ({
-      id: author._id.toString(),
-      name: author.name,
-      bio: author.bio,
-      avatarUrl: author.avatarUrl,
-      createdAt: author.createdAt,
-      updatedAt: author.updatedAt
-    }))
-  );
+export const listAuthors = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ message: 'Unauthorized' });
+    return;
+  }
+
+  const filters = req.user.role === 'admin' ? {} : { userId: new ObjectId(req.user.userId) };
+  const authors = await authorsCollection().find(filters).sort({ createdAt: -1 }).toArray();
+  res.status(200).json(authors.map(mapAuthorResponse));
 };
 
-export const getAuthorById = async (req: Request, res: Response): Promise<void> => {
+export const getAuthorById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ message: 'Unauthorized' });
+    return;
+  }
+
   const id = readParam(req.params.id);
   if (!ObjectId.isValid(id)) {
     res.status(400).json({ message: 'Invalid author id' });
     return;
   }
 
-  const author = await authorsCollection().findOne({ _id: new ObjectId(id) });
+  const filters: Record<string, unknown> = { _id: new ObjectId(id) };
+  if (req.user.role !== 'admin') {
+    filters.userId = new ObjectId(req.user.userId);
+  }
+
+  const author = await authorsCollection().findOne(filters);
   if (!author) {
     res.status(404).json({ message: 'Author not found' });
     return;
   }
 
-  res.status(200).json({
-    id: author._id.toString(),
-    name: author.name,
-    bio: author.bio,
-    avatarUrl: author.avatarUrl,
-    createdAt: author.createdAt,
-    updatedAt: author.updatedAt
-  });
+  res.status(200).json(mapAuthorResponse(author));
 };
 
 export const getAuthorArticles = async (req: Request, res: Response): Promise<void> => {
@@ -141,6 +183,14 @@ export const updateAuthor = async (req: Request, res: Response): Promise<void> =
   if (req.body.avatarUrl !== undefined) {
     updates.avatarUrl = req.body.avatarUrl;
   }
+  if (req.body.userId !== undefined) {
+    const parsedUserId = parseOptionalObjectId(req.body.userId);
+    if (parsedUserId === undefined) {
+      res.status(400).json({ message: 'Invalid user id' });
+      return;
+    }
+    updates.userId = parsedUserId;
+  }
   updates.updatedAt = new Date();
 
   const result = await authorsCollection().findOneAndUpdate(
@@ -155,12 +205,7 @@ export const updateAuthor = async (req: Request, res: Response): Promise<void> =
   }
 
   res.status(200).json({
-    id: result._id.toString(),
-    name: result.name,
-    bio: result.bio,
-    avatarUrl: result.avatarUrl,
-    createdAt: result.createdAt,
-    updatedAt: result.updatedAt
+    ...mapAuthorResponse(result)
   });
 };
 

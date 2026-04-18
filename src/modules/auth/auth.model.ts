@@ -23,6 +23,11 @@ export type CreateUserInput = {
   role: UserRole;
 };
 
+export type UpdateOwnUserInput = {
+  name?: string;
+  email?: string;
+};
+
 const userSchema = new Schema<UserDoc>(
   {
     name: { type: String, required: true, trim: true },
@@ -109,6 +114,36 @@ export const updateUserActive = async (id: string, active: boolean): Promise<Use
         active,
         updatedAt: new Date()
       }
+    },
+    { new: true, lean: true }
+  ).exec()) as UserDoc | null;
+};
+
+export const updateOwnUser = async (id: string, input: UpdateOwnUserInput): Promise<UserDoc | null> => {
+  if (!Types.ObjectId.isValid(id)) {
+    return null;
+  }
+
+  const updates: {
+    updatedAt: Date;
+    name?: string;
+    email?: string;
+  } = {
+    updatedAt: new Date()
+  };
+
+  if (input.name !== undefined) {
+    updates.name = input.name.trim();
+  }
+
+  if (input.email !== undefined) {
+    updates.email = input.email.toLowerCase();
+  }
+
+  return (await UserModel.findOneAndUpdate(
+    { _id: new Types.ObjectId(id) },
+    {
+      $set: updates
     },
     { new: true, lean: true }
   ).exec()) as UserDoc | null;

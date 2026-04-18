@@ -22,6 +22,15 @@ export const changePasswordSchema = z
     path: ['newPassword']
   });
 
+export const updateMeSchema = z
+  .object({
+    name: z.string().trim().min(2).max(120).optional(),
+    email: z.string().email().toLowerCase().optional()
+  })
+  .refine((payload) => payload.name !== undefined || payload.email !== undefined, {
+    message: 'At least one field is required'
+  });
+
 export const userIdParamsSchema = z.object({
   id: z.string().min(1)
 });

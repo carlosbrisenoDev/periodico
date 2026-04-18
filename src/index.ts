@@ -4,7 +4,7 @@ import { connectDatabase } from './db.js';
 import { ensureDatabaseIndexes } from './libs/db-indexes.js';
 import { ensureDefaultAdmin } from './modules/auth/auth.model.js';
 
-const bootstrap = async (): Promise<void> => {
+const bootstrap = async ()=> {
   await connectDatabase();
   await ensureDatabaseIndexes();
   await ensureDefaultAdmin();

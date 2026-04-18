@@ -6,6 +6,7 @@ export type AuthorDoc = {
   name: string;
   bio?: string;
   avatarUrl?: string;
+  userId?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -14,7 +15,8 @@ const authorSchema = new Schema<AuthorDoc>(
   {
     name: { type: String, required: true, trim: true },
     bio: { type: String, required: false },
-    avatarUrl: { type: String, required: false }
+    avatarUrl: { type: String, required: false },
+    userId: { type: Schema.Types.ObjectId, required: false, ref: 'User', default: null, index: true }
   },
   {
     collection: 'authors',

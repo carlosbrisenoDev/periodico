@@ -9,6 +9,7 @@ import {
   findUserByEmail,
   findUserById,
   listUsers,
+  updateOwnUser,
   updateUserActive,
   updateUserPassword,
   updateUserRole,
@@ -85,6 +86,39 @@ export const me = async (req: AuthenticatedRequest, res: Response): Promise<void
   res.status(200).json({
     user: mapUserResponse(user)
   });
+};
+
+export const patchMe = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ message: 'Unauthorized' });
+    return;
+  }
+
+  const { name, email } = req.body;
+
+  try {
+    const updatedUser = await updateOwnUser(req.user.userId, {
+      name,
+      email
+    });
+
+    if (!updatedUser) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'Profile updated successfully',
+      user: mapUserResponse(updatedUser)
+    });
+  } catch (error) {
+    if (error instanceof MongoServerError && error.code === 11000) {
+      res.status(409).json({ message: 'Email already registered' });
+      return;
+    }
+
+    throw error;
+  }
 };
 
 export const register = async (req: AuthenticatedRequest, res: Response): Promise<void> => {

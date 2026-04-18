@@ -35,6 +35,13 @@
   - Success `200`: `{ user }`.
   - Errores: `401 Unauthorized/Invalid token`, `404 User not found`.
 
+## `PATCH /api/v1/auth/me` — actualizar perfil propio
+- **Headers requeridos:** `Content-Type: application/json`, `Cookie: <COOKIE_NAME>=<jwt>`.
+- **Campos requeridos:** body con al menos un campo `{ name?: string(min2,max120), email?: string(email) }`.
+- **Respuesta común:**
+  - Success `200`: `{ message: 'Profile updated successfully', user }`.
+  - Errores: `400 Validation error`, `401 Unauthorized/Invalid token`, `404 User not found`, `409 Email already registered`.
+
 ## `GET /api/v1/auth/users` — listar usuarios (admin)
 - **Headers requeridos:** `Cookie: <COOKIE_NAME>=<jwt>` (admin).
 - **Campos requeridos:** ninguno.
