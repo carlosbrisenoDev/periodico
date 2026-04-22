@@ -10,6 +10,7 @@ import {
   getLatest,
   getSitemap,
   getTrending,
+  getRecommendations,
   searchArticles
 } from './public.controller.js';
 import {
@@ -17,6 +18,7 @@ import {
   publicArticleSlugSchema,
   publicCategorySlugSchema,
   publicListSchema,
+  publicRecommendationsSchema,
   publicSearchSchema
 } from './public.schemas.js';
 
@@ -27,6 +29,7 @@ router.get('/categories', getCategories);
 router.get('/featured', getFeatured);
 router.get('/latest', getLatest);
 router.get('/trending', validateQuerySchema(publicListSchema), getTrending);
+router.get('/recommendations', validateQuerySchema(publicRecommendationsSchema), getRecommendations);
 router.get('/archive/:year/:month', validateParamsSchema(publicArchiveSchema), getArchive);
 router.get('/sitemap', getSitemap);
 router.get('/article/:slug', validateParamsSchema(publicArticleSlugSchema), getArticleBySlug);

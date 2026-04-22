@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/../../../WebstormProjects/MercadoNegro-backend/.idea/MercadoNegro-backend.iml" filepath="$PROJECT_DIR$/../../../WebstormProjects/MercadoNegro-backend/.idea/MercadoNegro-backend.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/periodico.iml" filepath="$PROJECT_DIR$/.idea/periodico.iml" />
       <module fileurl="file://$PROJECT_DIR$/../periodico-front-end/.idea/periodico-front-end.iml" filepath="$PROJECT_DIR$/../periodico-front-end/.idea/periodico-front-end.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../periodico-ia-front/.idea/periodico-ia-front.iml" filepath="$PROJECT_DIR$/../periodico-ia-front/.idea/periodico-ia-front.iml" />
       <module fileurl="file://$PROJECT_DIR$/../periodico-ia-frontend/.idea/periodico-ia-frontend.iml" filepath="$PROJECT_DIR$/../periodico-ia-frontend/.idea/periodico-ia-frontend.iml" />
     </modules>
   </component>

@@ -35,6 +35,14 @@
   - Success `200`: `article[]` ordenado por `views desc`.
   - Errores: `400 Validation error`.
 
+## `GET /api/v1/public/recommendations` — recomendaciones simples por tags
+- **Headers requeridos:** ninguno.
+- **Campos requeridos:** query opcional `{ tags?: string(coma separada), excludeId?: ObjectId, limit?: int 1..12 }`.
+- **Reglas:** solo artículos `published` de los últimos 7 días; prioriza coincidencia por tags.
+- **Respuesta común:**
+  - Success `200`: `{ items }`.
+  - Errores: `400 Validation error | Invalid article id`.
+
 ## `GET /api/v1/public/archive/:year/:month` — archivo mensual
 - **Headers requeridos:** ninguno.
 - **Campos requeridos:** params `{ year: YYYY, month: 1..12 }`.

@@ -22,8 +22,7 @@
   - Errores: `400 Validation error | Invalid article id`, `404 Article not found`.
 
 ## `POST /api/v1/article` — crear artículo (admin|editor)
-- **Headers requeridos:** `Content-Type: application/json`, `Cookie: <COOKIE_NAME>=<jwt>`.
-- **Campos requeridos:** body `{ title(min3), slug?, excerpt(min3), content(min10), featuredImageUrl?, status(draft|published|scheduled=default draft), isFeatured?, authorId, categoryIds[], scheduledAt? }`.
+- **Headers requeridos:** `Content-Type: application/json`, `Cookie: <COOKIE_NAME>=<jwt>`- **Campos requeridos:** body `{ title(min3), slug?, excerpt(min3), content(min10), featuredImageUrl?, tags?: string[], status(draft|published|scheduled=default draft), isFeatured?, authorId, categoryIds[], scheduledAt? }`.
 - **Respuesta común:**
   - Success `201`: `article` (slug autogenerado/único, fechas según status).
   - Errores: `400 Validation error | Invalid authorId | Invalid categoryIds | scheduledAt inválido por status`, `401 Unauthorized/Invalid token`, `403 Forbidden`, `404 Author not found | One or more categories not found`, `409 Article slug already exists`.
@@ -32,7 +31,7 @@
 - **Headers requeridos:** `Content-Type: application/json`, `Cookie: <COOKIE_NAME>=<jwt>`.
 - **Campos requeridos:**
   - params `{ id: string(min1) }` (ObjectId válido)
-  - body parcial de create schema (`updateArticleSchema`).
+  - body parcial de create schema (`updateArticleSchema`) incluyendo `tags?: string[]`.
 - **Respuesta común:**
   - Success `200`: `article` actualizado.
   - Errores: `400 Validation error | Invalid article id | Invalid authorId | Invalid categoryIds | reglas scheduledAt/status`, `401 Unauthorized/Invalid token`, `403 Forbidden`, `404 Article/Author/Categories not found`, `409 Article slug already exists`.

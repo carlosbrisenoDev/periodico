@@ -15,3 +15,6 @@ package_lock.json
 agents.md
 
 .idea
+
+.DS_Store
+*.DS_Store

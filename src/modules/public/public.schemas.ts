@@ -13,6 +13,12 @@ export const publicSearchSchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(10)
 });
 
+export const publicRecommendationsSchema = z.object({
+  tags: z.string().trim().optional(),
+  excludeId: z.string().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(12).default(4)
+});
+
 
 export const publicListSchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).optional()

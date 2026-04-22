@@ -80,6 +80,45 @@ const getPublicArticles = async (options: {
   return Promise.all(articles.map(toPublicArticle));
 };
 
+const normalizeRecommendationTags = (value: string): string[] =>
+  Array.from(
+    new Set(
+      value
+        .split(',')
+        .map((tag) => tag.trim().toLowerCase())
+        .filter((tag) => tag.length > 0)
+    )
+  );
+
+const toRecommendedArticle = async (
+  article: {
+    _id: ObjectId;
+    title: string;
+    slug: string;
+    excerpt: string;
+    content: string;
+    featuredImageUrl: string | null;
+    isFeatured: boolean;
+    authorId: ObjectId;
+    categoryIds: ObjectId[];
+    publishedAt: Date | null;
+    scheduledAt: Date | null;
+    views: number;
+    createdAt: Date;
+    updatedAt: Date;
+    tags: string[];
+  },
+  matchedTags: string[]
+): Promise<Record<string, unknown>> => {
+  const base = await toPublicArticle(article);
+
+  return {
+    ...base,
+    matchedTags,
+    tags: article.tags
+  };
+};
+
 export const getHome = async (_req: Request, res: Response): Promise<void> => {
   const [recent, featured, latest] = await Promise.all([
     getPublicArticles({ limit: 12, sort: { publishedAt: -1, createdAt: -1 } }),
@@ -210,6 +249,63 @@ export const searchArticles = async (req: Request, res: Response): Promise<void>
     q: query,
     total: articles.length,
     items: await Promise.all(articles.map(toPublicArticle))
+  });
+};
+
+export const getRecommendations = async (req: Request, res: Response): Promise<void> => {
+  const tags = normalizeRecommendationTags(String(req.query.tags || ''));
+  const limit = Number(req.query.limit || 4);
+  const excludeId = String(req.query.excludeId || '').trim();
+  const excludeObjectId = excludeId && ObjectId.isValid(excludeId) ? new ObjectId(excludeId) : null;
+
+  if (excludeId && !excludeObjectId) {
+    res.status(400).json({ message: 'Invalid article id' });
+    return;
+  }
+
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const articles = await publicArticlesCollection()
+    .find({
+      status: 'published',
+      publishedAt: { $gte: weekAgo },
+      ...(excludeObjectId ? { _id: { $ne: excludeObjectId } } : {})
+    })
+    .sort({ publishedAt: -1, createdAt: -1 })
+    .toArray();
+
+  const normalizedTags = new Set(tags);
+  const recommendations = articles
+    .map((article) => {
+      const matchedTags = tags.length
+        ? article.tags
+            .map((tag) => tag.trim().toLowerCase())
+            .filter((tag) => normalizedTags.has(tag))
+        : [];
+
+      return {
+        article,
+        matchedTags
+      };
+    })
+    .filter(({ matchedTags }) => (tags.length ? matchedTags.length > 0 : true))
+    .sort((left, right) => {
+      if (right.matchedTags.length !== left.matchedTags.length) {
+        return right.matchedTags.length - left.matchedTags.length;
+      }
+
+      const rightPublishedAt = right.article.publishedAt?.getTime() ?? 0;
+      const leftPublishedAt = left.article.publishedAt?.getTime() ?? 0;
+      if (rightPublishedAt !== leftPublishedAt) {
+        return rightPublishedAt - leftPublishedAt;
+      }
+
+      return right.article.createdAt.getTime() - left.article.createdAt.getTime();
+    })
+    .slice(0, limit);
+
+  res.status(200).json({
+    items: await Promise.all(recommendations.map(({ article, matchedTags }) => toRecommendedArticle(article, matchedTags)))
   });
 };
 

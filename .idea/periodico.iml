@@ -11,5 +11,6 @@
     <orderEntry type="module" module-name="periodico-front-end" />
     <orderEntry type="module" module-name="periodico-ia-frontend" />
     <orderEntry type="module" module-name="MercadoNegro-backend" />
+    <orderEntry type="module" module-name="periodico-ia-front" />
   </component>
 </module>

@@ -9,6 +9,7 @@ Este archivo es el **índice principal** para pruebas manuales de la API.
 - [Article](./src/modules/article/all.md)
 - [Category](./src/modules/category/all.md)
 - [Author](./src/modules/author/all.md)
+- [Social](./src/modules/social/all.md)
 - [Image](./src/modules/image/all.md)
 - [Public](./src/modules/public/all.md)
 - [Subscribers](./src/modules/subscribers/all.md)
@@ -23,9 +24,10 @@ flowchart LR
   A --> M3[Article]
   A --> M4[Category]
   A --> M5[Author]
-  A --> M6[Image]
-  A --> M7[Public]
-  A --> M8[Subscribers]
+  A --> M6[Social]
+  A --> M7[Image]
+  A --> M8[Public]
+  A --> M9[Subscribers]
 
   M1 --> J[JWT Cookie]
   M8 --> SJ[Subscriber JWT Cookie]
@@ -39,9 +41,10 @@ flowchart LR
   M6 --> DB
   M7 --> DB
   M8 --> DB
+  M9 --> DB
 
-  M6 --> FS[(uploads/featured)]
-  FS --> M7
+  M7 --> FS[(uploads/featured)]
+  FS --> M8
 ```
 
 ## Relaciones de base de datos (Mermaid)
@@ -64,6 +67,16 @@ erDiagram
     string name
     string bio
     string avatarUrl
+    date createdAt
+    date updatedAt
+  }
+
+  SOCIALS {
+    ObjectId _id PK
+    ObjectId authorId FK
+    string platform
+    string url
+    string label
     date createdAt
     date updatedAt
   }
@@ -117,6 +130,7 @@ erDiagram
   }
 
   AUTHORS ||--o{ ARTICLES : "authorId"
+  AUTHORS ||--o{ SOCIALS : "authorId"
   CATEGORIES }o--o{ ARTICLES : "categoryIds[]"
 ```
 

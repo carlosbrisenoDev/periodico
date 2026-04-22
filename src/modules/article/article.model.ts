@@ -10,6 +10,7 @@ export type ArticleDoc = {
     excerpt: string;
     content: string;
     featuredImageUrl: string | null;
+    tags: string[];
     status: ArticleStatus;
     isFeatured: boolean;
     authorId: Types.ObjectId;
@@ -47,6 +48,10 @@ const articleSchema = new Schema<ArticleDoc>({
         type: String,
         required: false,
         default: null
+    },
+    tags: {
+        type: [String],
+        default: []
     },
     status: {
         type: String,

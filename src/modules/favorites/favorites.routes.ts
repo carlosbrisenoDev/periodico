@@ -1,16 +1,14 @@
 import { Router } from 'express';
-import { requireRole } from '../../middlewares/requireRole.js';
-import { validateToken } from '../../middlewares/validateToken.js';
-import { validateBodySchema, validateParamsSchema, validateQuerySchema } from '../../middlewares/validator.middleware.js';
-import {isFavoriteParams} from './favorites.schemas.js';
-import {isFavorite} from './favorites.controller.js';
+import { validateBodySchema, validateParamsSchema } from '../../middlewares/validator.middleware.js';
+import { validateSubscriber } from '../../middlewares/validateToken.js';
+import { addFavorite, isFavorite, listFavorites, removeFavorite } from './favorites.controller.js';
+import { createFavoriteSchema, favoriteArticleParamsSchema } from './favorites.schemas.js';
 
 const router = Router();
 
-router.get(
-    "/isFavorite/:userId/:article:id",
-    validateParamsSchema(isFavoriteParams),
-    isFavorite
-);
+router.get('/', validateSubscriber, listFavorites);
+router.post('/', validateSubscriber, validateBodySchema(createFavoriteSchema), addFavorite);
+router.delete('/:articleId', validateSubscriber, validateParamsSchema(favoriteArticleParamsSchema), removeFavorite);
+router.get('/is-favorite/:articleId', validateSubscriber, validateParamsSchema(favoriteArticleParamsSchema), isFavorite);
 
 export default router;

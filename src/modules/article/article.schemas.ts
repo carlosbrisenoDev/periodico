@@ -2,12 +2,18 @@ import { z } from 'zod';
 
 const statusSchema = z.enum(['draft', 'published', 'scheduled']);
 
+const tagsSchema = z
+  .array(z.string().trim().min(1))
+  .default([])
+  .transform((values) => Array.from(new Set(values.map((tag) => tag.trim()))));
+
 export const createArticleSchema = z.object({
   title: z.string().min(3),
   slug: z.string().min(3).optional(),
   excerpt: z.string().min(3),
   content: z.string().min(10),
   featuredImageUrl: z.string().min(1).nullable().optional(),
+  tags: tagsSchema.optional(),
   status: statusSchema.default('draft'),
   isFeatured: z.boolean().default(false),
   authorId: z.string().min(1),

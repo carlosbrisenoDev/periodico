@@ -27,6 +27,7 @@
 **Campos requeridos:**
 - Form-data: `image` (archivo)
 - Restricciones actuales: jpg/png/webp, máximo 5MB
+- Nombre de archivo generado: `<nombre_original_saneado>_<dd-mm-yyyy-hh-mm-ss-SSS>.<ext>`
 
 **Respuesta común:**
 - Success `201`: `{ id, filename, url }`

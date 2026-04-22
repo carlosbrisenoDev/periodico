@@ -1,18 +1,36 @@
-import mongoose, {Schema, Types} from 'mongoose';
+import mongoose, { Schema, Types } from 'mongoose';
 
-export type favoriteDoc = {
-    _id: Types.ObjectId;
-    articleId: Types.ObjectId;
-    userId: Types.ObjectId;
+export type FavoriteDoc = {
+  _id: Types.ObjectId;
+  subscriberId: Types.ObjectId;
+  articleId: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
-const favorite = new Schema<favoriteDoc>({
-    articleId: String,
-    userId: String,
+const favoriteSchema = new Schema<FavoriteDoc>(
+  {
+    subscriberId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: 'Subscriber',
+      index: true
+    },
+    articleId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: 'Article',
+      index: true
+    }
+  },
+  {
+    collection: 'favorites',
+    versionKey: false,
+    timestamps: true
+  }
+);
 
-}, {
-    collection: 'articles', versionKey: false, timestamps: true
-});
+favoriteSchema.index({ subscriberId: 1, articleId: 1 }, { unique: true });
 
-
-export default mongoose.model("Favorite", favorite);
+export const FavoriteModel =
+  mongoose.models.Favorite || mongoose.model<FavoriteDoc>('Favorite', favoriteSchema);

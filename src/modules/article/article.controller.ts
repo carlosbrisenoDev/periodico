@@ -20,6 +20,7 @@ const toArticleResponse = (article: ArticleDoc) => ({
     excerpt: article.excerpt,
     content: article.content,
     featuredImageUrl: article.featuredImageUrl,
+    tags: article.tags ?? [],
     status: article.status,
     isFeatured: article.isFeatured,
     authorId: article.authorId.toString(),
@@ -51,6 +52,31 @@ const parseObjectIdArray = (values: string[]): ObjectId[] | null => {
 };
 
 const toNonEmptyString = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
+
+const normalizeTags = (value: unknown): string[] => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    const seen = new Set<string>();
+    const tags: string[] = [];
+
+    for (const entry of value) {
+        if (typeof entry !== 'string') {
+            continue;
+        }
+
+        const cleanTag = entry.trim();
+        if (!cleanTag || seen.has(cleanTag)) {
+            continue;
+        }
+
+        seen.add(cleanTag);
+        tags.push(cleanTag);
+    }
+
+    return tags;
+};
 
 const ensureArticleRelationsAreValid = async (authorId: ObjectId, categoryIds: ObjectId[]): Promise<string | null> => {
     const authorFound = await authorsCollection().findOne({_id: authorId});
@@ -108,7 +134,7 @@ const generateUniqueSlug = async (base: string, currentId?: ObjectId): Promise<s
 export const createArticle = async (req: Request, res: Response): Promise<void> => {
     try {
         const {
-            title, slug, excerpt, content, featuredImageUrl, status, isFeatured, authorId, categoryIds, scheduledAt
+            title, slug, excerpt, content, featuredImageUrl, tags, status, isFeatured, authorId, categoryIds, scheduledAt
         } = req.body;
 
         const authorObjectId = parseObjectId(authorId);
@@ -164,6 +190,7 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
             excerpt,
             content,
             featuredImageUrl: featuredImageUrl ?? null,
+            tags: normalizeTags(tags),
             status,
             isFeatured,
             authorId: authorObjectId,
@@ -274,6 +301,9 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
     }
     if (req.body.featuredImageUrl !== undefined) {
         updates.featuredImageUrl = req.body.featuredImageUrl;
+    }
+    if (req.body.tags !== undefined) {
+        updates.tags = normalizeTags(req.body.tags);
     }
     if (req.body.isFeatured !== undefined) {
         updates.isFeatured = req.body.isFeatured;
@@ -473,6 +503,7 @@ export const duplicateArticle = async (req: Request, res: Response): Promise<voi
         excerpt: articleFound.excerpt,
         content: articleFound.content,
         featuredImageUrl: articleFound.featuredImageUrl,
+        tags: articleFound.tags ?? [],
         status: 'draft',
         isFeatured: articleFound.isFeatured,
         authorId: articleFound.authorId,

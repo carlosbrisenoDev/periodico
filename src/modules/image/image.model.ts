@@ -1,5 +1,6 @@
 import multer from 'multer';
 import mongoose, { Schema, Types } from 'mongoose';
+import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { createCollectionAdapter } from '../../libs/mongoose-adapter.js';
 
@@ -31,11 +32,49 @@ const imagesCollection = () => createCollectionAdapter<ImageDoc>(ImageModel);
 
 export { imagesCollection };
 
+const uploadDirectory = path.resolve('uploads/featured');
+mkdirSync(uploadDirectory, { recursive: true });
+
+const MIME_EXTENSION_MAP: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp'
+};
+
+const sanitizeBaseName = (value: string): string => {
+  const normalized = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 80);
+
+  return normalized || 'imagen';
+};
+
+const padTwo = (value: number): string => String(value).padStart(2, '0');
+
+const buildTimestamp = (date: Date): string => {
+  const day = padTwo(date.getDate());
+  const month = padTwo(date.getMonth() + 1);
+  const year = String(date.getFullYear());
+  const hours = padTwo(date.getHours());
+  const minutes = padTwo(date.getMinutes());
+  const seconds = padTwo(date.getSeconds());
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+
+  return `${day}-${month}-${year}-${hours}-${minutes}-${seconds}-${milliseconds}`;
+};
+
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, path.resolve('uploads/featured')),
+  destination: (_req, _file, cb) => cb(null, uploadDirectory),
   filename: (_req, file, cb) => {
-    const extension = path.extname(file.originalname) || '.jpg';
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension.toLowerCase()}`);
+    const originalExtension = path.extname(file.originalname).toLowerCase();
+    const extension = (MIME_EXTENSION_MAP[file.mimetype] ?? originalExtension) || '.jpg';
+    const baseName = sanitizeBaseName(path.basename(file.originalname, path.extname(file.originalname)));
+    const timestamp = buildTimestamp(new Date());
+
+    cb(null, `${baseName}_${timestamp}${extension}`);
   }
 });
 
