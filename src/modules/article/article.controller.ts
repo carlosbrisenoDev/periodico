@@ -629,7 +629,8 @@ export const duplicateArticle = async (req: Request, res: Response): Promise<voi
         publishedAt: null,
         views: 0,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        deletedAt: null
     };
 
     await articlesCollection().insertOne(duplicatedArticle);
