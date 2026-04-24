@@ -17,8 +17,11 @@ import {
   deleteArticle,
   getArticleById,
   getArticleBySlug,
+  listDeletedArticles,
   listArticles,
   publishArticleNow,
+  purgeArticle,
+  restoreArticle,
   updateArticle,
   updateArticleFeature,
   updateArticleStatus
@@ -27,6 +30,7 @@ import {
 const router = Router();
 
 router.get('/', validateQuerySchema(listArticlesQuerySchema), listArticles);
+router.get('/deleted', validateToken, requireRole('admin'), listDeletedArticles);
 router.get('/slug/:slug', validateParamsSchema(articleSlugSchema), getArticleBySlug);
 router.get('/:id', validateParamsSchema(articleIdSchema), getArticleById);
 router.post('/', validateToken, requireRole('admin', 'editor'), validateBodySchema(createArticleSchema), createArticle);
@@ -40,6 +44,8 @@ router.patch(
 );
 router.post('/:id/publish-now', validateToken, requireRole('admin'), validateParamsSchema(articleIdSchema), publishArticleNow);
 router.post('/:id/duplicate', validateToken, requireRole('admin', 'editor'), validateParamsSchema(articleIdSchema), duplicateArticle);
+router.patch('/:id/restore', validateToken, requireRole('admin'), validateParamsSchema(articleIdSchema), restoreArticle);
+router.delete('/:id/permanent', validateToken, requireRole('admin'), validateParamsSchema(articleIdSchema), purgeArticle);
 router.patch(
   '/:id/status',
   validateToken,

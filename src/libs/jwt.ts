@@ -16,7 +16,7 @@ export const signAuthToken = (payload: JwtPayload): string => jwt.sign(payload, 
 export const verifyAuthToken = (
     token: string
 ): JwtPayload =>
-    jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+    jwt.verify(token, env.JWT_SECRET) as unknown as JwtPayload;
 
 export const signSubscriberToken = (payload: JwtSubscriberPayload): string => jwt.sign(payload, env.JWT_SECRET, {
     expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn']
@@ -25,4 +25,4 @@ export const signSubscriberToken = (payload: JwtSubscriberPayload): string => jw
 export const verifySubscriberToken = (
   token: string
 ): JwtSubscriberPayload =>
-  jwt.verify(token, env.JWT_SECRET) as JwtSubscriberPayload;
+  jwt.verify(token, env.JWT_SECRET) as unknown as JwtSubscriberPayload;

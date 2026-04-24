@@ -2,6 +2,7 @@ import mongoose, {Schema, Types} from 'mongoose';
 import {createCollectionAdapter} from '../../libs/mongoose-adapter.js';
 
 export type ArticleStatus = 'draft' | 'published' | 'scheduled';
+export type ArticleFeaturedType = 'none' | 'hero' | 'headline' | 'breaking';
 
 export type ArticleDoc = {
     _id: Types.ObjectId;
@@ -13,6 +14,9 @@ export type ArticleDoc = {
     tags: string[];
     status: ArticleStatus;
     isFeatured: boolean;
+    featuredType: ArticleFeaturedType;
+    featuredAt: Date | null;
+    deletedAt: Date | null;
     authorId: Types.ObjectId;
     categoryIds: Types.ObjectId[];
     scheduledAt: Date | null;
@@ -61,6 +65,24 @@ const articleSchema = new Schema<ArticleDoc>({
     isFeatured: {
         type: Boolean,
         default: false,
+        index: true
+    },
+    featuredType: {
+        type: String,
+        enum: ['none', 'hero', 'headline', 'breaking'],
+        default: 'none',
+        index: true
+    },
+    featuredAt: {
+        type: Date,
+        required: false,
+        default: null,
+        index: true
+    },
+    deletedAt: {
+        type: Date,
+        required: false,
+        default: null,
         index: true
     },
     authorId: {

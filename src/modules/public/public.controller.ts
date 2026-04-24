@@ -9,6 +9,41 @@ import {
 } from './public.model.js';
 
 const PUBLIC_API_BASE_PATH = '/api/v1/public';
+const FEATURED_HERO_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+const resolveFeaturedType = (article: { isFeatured: boolean; featuredType?: string | null }): 'none' | 'hero' | 'headline' | 'breaking' => {
+  if (
+    article.featuredType === 'hero' ||
+    article.featuredType === 'headline' ||
+    article.featuredType === 'breaking' ||
+    article.featuredType === 'none'
+  ) {
+    return article.featuredType;
+  }
+
+  return article.isFeatured ? 'hero' : 'none';
+};
+
+const isActiveFeaturedArticle = (article: {
+  isFeatured: boolean;
+  featuredType?: string | null;
+  featuredAt?: Date | null;
+  updatedAt: Date;
+  createdAt: Date;
+}): boolean => {
+  const featuredType = resolveFeaturedType(article);
+
+  if (featuredType === 'none') {
+    return false;
+  }
+
+  if (featuredType !== 'hero') {
+    return true;
+  }
+
+  const startedAt = article.featuredAt ?? article.updatedAt ?? article.createdAt;
+  return Date.now() - startedAt.getTime() < FEATURED_HERO_MAX_AGE_MS;
+};
 
 const toPublicArticle = async (article: {
   _id: ObjectId;
@@ -18,6 +53,8 @@ const toPublicArticle = async (article: {
   content: string;
   featuredImageUrl: string | null;
   isFeatured: boolean;
+  featuredType?: string | null;
+  featuredAt?: Date | null;
   authorId: ObjectId;
   categoryIds: ObjectId[];
   publishedAt: Date | null;
@@ -34,6 +71,8 @@ const toPublicArticle = async (article: {
       .toArray()
   ]);
 
+  const activeFeatured = isActiveFeaturedArticle(article);
+
   return {
     id: article._id.toString(),
     title: article.title,
@@ -41,7 +80,9 @@ const toPublicArticle = async (article: {
     excerpt: article.excerpt,
     content: article.content,
     featuredImageUrl: article.featuredImageUrl,
-    isFeatured: article.isFeatured,
+    isFeatured: activeFeatured,
+    featuredType: activeFeatured ? resolveFeaturedType(article) : 'none',
+    featuredAt: activeFeatured ? article.featuredAt : null,
     author: author
       ? {
           id: serializeObjectId(author._id),
@@ -74,10 +115,14 @@ const getPublicArticles = async (options: {
   const articles = await publicArticlesCollection()
     .find(filter)
     .sort(options.sort)
-    .limit(options.limit)
+    .limit(options.isFeatured ? options.limit * 4 : options.limit)
     .toArray();
 
-  return Promise.all(articles.map(toPublicArticle));
+  const normalizedArticles = options.isFeatured
+    ? articles.filter((article) => isActiveFeaturedArticle(article)).slice(0, options.limit)
+    : articles.slice(0, options.limit);
+
+  return Promise.all(normalizedArticles.map(toPublicArticle));
 };
 
 const normalizeRecommendationTags = (value: string): string[] =>

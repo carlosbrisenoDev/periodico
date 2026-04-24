@@ -8,6 +8,7 @@ export const publicAuthorsCollection = authorsCollection;
 export const publicCategoriesCollection = categoriesCollection;
 
 export const isPublishableFilter = (): Record<string, unknown> => ({
+  deletedAt: null,
   $or: [{ status: 'published' }, { status: 'scheduled', scheduledAt: { $lte: new Date() } }]
 });
 

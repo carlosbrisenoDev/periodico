@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const statusSchema = z.enum(['draft', 'published', 'scheduled']);
+const featuredTypeSchema = z.enum(['none', 'hero', 'headline', 'breaking']);
 
 const tagsSchema = z
   .array(z.string().trim().min(1))
@@ -16,6 +17,7 @@ export const createArticleSchema = z.object({
   tags: tagsSchema.optional(),
   status: statusSchema.default('draft'),
   isFeatured: z.boolean().default(false),
+  featuredType: featuredTypeSchema.default('none'),
   authorId: z.string().min(1),
   categoryIds: z.array(z.string().min(1)).default([]),
   scheduledAt: z.string().datetime().nullable().optional()
@@ -39,7 +41,8 @@ export const listArticlesQuerySchema = z.object({
 });
 
 export const updateArticleFeatureSchema = z.object({
-  isFeatured: z.boolean().optional()
+  isFeatured: z.boolean().optional(),
+  featuredType: featuredTypeSchema.optional()
 });
 
 export const updateArticleStatusSchema = z

@@ -2,7 +2,61 @@ import {Request, Response} from 'express';
 import {Filter, MongoServerError, ObjectId} from 'mongodb';
 import {authorsCollection} from '../author/author.model.js';
 import {categoriesCollection} from '../category/category.model.js';
-import {ArticleDoc, articlesCollection} from './article.model.js';
+import {ArticleDoc, ArticleFeaturedType, articlesCollection} from './article.model.js';
+
+const FEATURED_TYPES = new Set<ArticleFeaturedType>(['none', 'hero', 'headline', 'breaking']);
+const FEATURED_HERO_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+const isFeaturedType = (value: unknown): value is ArticleFeaturedType =>
+    typeof value === 'string' && FEATURED_TYPES.has(value as ArticleFeaturedType);
+
+const resolveFeaturedType = (
+    article: Pick<ArticleDoc, 'isFeatured'> & { featuredType?: string | null }
+): ArticleFeaturedType => {
+    if (isFeaturedType(article.featuredType)) {
+        return article.featuredType as ArticleFeaturedType;
+    }
+    return article.isFeatured ? 'hero' : 'none';
+};
+
+const resolveFeaturedAt = (
+    featuredType: ArticleFeaturedType,
+    featuredAt?: Date | null
+): Date | null => {
+    if (featuredType === 'none') {
+        return null;
+    }
+
+    return featuredAt ?? new Date();
+};
+
+const activeArticleFilter = (): Filter<ArticleDoc> => ({ deletedAt: null });
+
+const deletedArticleFilter = (): Filter<ArticleDoc> => ({
+    deletedAt: { $exists: true, $ne: null }
+});
+
+const demoteOtherHeroArticles = async (articleId?: ObjectId): Promise<void> => {
+    const heroArticles = await articlesCollection().find({ featuredType: 'hero' }).toArray();
+
+    await Promise.all(
+        heroArticles
+            .filter((article) => !articleId || article._id.toString() !== articleId.toString())
+            .map((article) =>
+                articlesCollection().updateOne(
+                    { _id: article._id },
+                    {
+                        $set: {
+                            isFeatured: false,
+                            featuredType: 'none',
+                            featuredAt: null,
+                            updatedAt: new Date()
+                        }
+                    }
+                )
+            )
+    );
+};
 
 const readParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] : value ?? '');
 
@@ -23,6 +77,9 @@ const toArticleResponse = (article: ArticleDoc) => ({
     tags: article.tags ?? [],
     status: article.status,
     isFeatured: article.isFeatured,
+    featuredType: resolveFeaturedType(article),
+    featuredAt: article.featuredAt,
+    deletedAt: article.deletedAt,
     authorId: article.authorId.toString(),
     categoryIds: article.categoryIds.map((id) => id.toString()),
     scheduledAt: article.scheduledAt,
@@ -134,7 +191,7 @@ const generateUniqueSlug = async (base: string, currentId?: ObjectId): Promise<s
 export const createArticle = async (req: Request, res: Response): Promise<void> => {
     try {
         const {
-            title, slug, excerpt, content, featuredImageUrl, tags, status, isFeatured, authorId, categoryIds, scheduledAt
+            title, slug, excerpt, content, featuredImageUrl, tags, status, isFeatured, featuredType, authorId, categoryIds, scheduledAt
         } = req.body;
 
         const authorObjectId = parseObjectId(authorId);
@@ -183,6 +240,18 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
         }
 
         const now = new Date();
+        const normalizedFeaturedType =
+            isFeaturedType(featuredType)
+                ? featuredType
+                : isFeatured
+                    ? 'hero'
+                    : 'none';
+        const normalizedFeaturedAt = resolveFeaturedAt(normalizedFeaturedType);
+
+        if (normalizedFeaturedType === 'hero') {
+            await demoteOtherHeroArticles();
+        }
+
         const article: ArticleDoc = {
             _id: new ObjectId(),
             title,
@@ -192,14 +261,17 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
             featuredImageUrl: featuredImageUrl ?? null,
             tags: normalizeTags(tags),
             status,
-            isFeatured,
+            isFeatured: normalizedFeaturedType !== 'none',
+            featuredType: normalizedFeaturedType as ArticleDoc['featuredType'],
+            featuredAt: normalizedFeaturedAt,
             authorId: authorObjectId,
             categoryIds: categoryObjectIds,
             scheduledAt: scheduledDate,
             publishedAt: status === 'published' ? now : null,
             views: 0,
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
+            deletedAt: null
         };
 
 
@@ -234,6 +306,8 @@ export const listArticles = async (_req: Request, res: Response): Promise<void> 
     const hasLimit = queryLimit !== '';
     const page = hasPage ? Number(queryPage) : 1;
     const requestedLimit = hasLimit ? Number(queryLimit) : 20;
+    Object.assign(filters, activeArticleFilter());
+
     const total = await articlesCollection().countDocuments(filters);
     const limit = hasPage || hasLimit ? requestedLimit : total || 20;
     const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -253,7 +327,7 @@ export const getArticleById = async (req: Request, res: Response): Promise<void>
         return;
     }
 
-    const article = await articlesCollection().findOne({_id: articleId});
+    const article = await articlesCollection().findOne({_id: articleId, deletedAt: null});
     if (!article) {
         res.status(404).json({message: 'Article not found'});
         return;
@@ -264,7 +338,7 @@ export const getArticleById = async (req: Request, res: Response): Promise<void>
 
 export const getArticleBySlug = async (req: Request, res: Response): Promise<void> => {
     const slug = readParam(req.params.slug).trim();
-    const article = await articlesCollection().findOne({slug});
+    const article = await articlesCollection().findOne({slug, deletedAt: null});
     if (!article) {
         res.status(404).json({message: 'Article not found'});
         return;
@@ -280,7 +354,7 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
         return;
     }
 
-    const articleFound = await articlesCollection().findOne({_id: articleId});
+    const articleFound = await articlesCollection().findOne({_id: articleId, deletedAt: null});
     if (!articleFound) {
         res.status(404).json({message: 'Article not found'});
         return;
@@ -305,8 +379,23 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
     if (req.body.tags !== undefined) {
         updates.tags = normalizeTags(req.body.tags);
     }
-    if (req.body.isFeatured !== undefined) {
-        updates.isFeatured = req.body.isFeatured;
+    const requestedFeaturedType =
+        typeof req.body.featuredType === 'string' && isFeaturedType(req.body.featuredType)
+            ? req.body.featuredType
+            : undefined;
+    const requestedIsFeatured = typeof req.body.isFeatured === 'boolean' ? req.body.isFeatured : undefined;
+
+    if (requestedFeaturedType !== undefined || requestedIsFeatured !== undefined) {
+        const nextFeaturedType =
+            requestedFeaturedType ?? (requestedIsFeatured ? resolveFeaturedType(articleFound) : 'none');
+
+        updates.isFeatured = nextFeaturedType !== 'none';
+        updates.featuredType = nextFeaturedType;
+        updates.featuredAt = nextFeaturedType === 'hero' ? new Date() : null;
+
+        if (nextFeaturedType === 'hero') {
+            await demoteOtherHeroArticles(articleId);
+        }
     }
     if (req.body.slug !== undefined || req.body.title !== undefined) {
         updates.slug = await generateUniqueSlug(req.body.slug ?? req.body.title, articleId);
@@ -417,16 +506,42 @@ export const updateArticleFeature = async (req: Request, res: Response): Promise
         return;
     }
 
-    const articleFound = await articlesCollection().findOne({_id: articleId});
+    const articleFound = await articlesCollection().findOne({_id: articleId, deletedAt: null});
     if (!articleFound) {
         res.status(404).json({message: 'Article not found'});
         return;
     }
 
-    const nextIsFeatured = req.body.isFeatured ?? !articleFound.isFeatured;
+    const currentFeaturedType = resolveFeaturedType(articleFound);
+
+    let nextFeaturedType: ArticleFeaturedType;
+    let nextIsFeatured: boolean;
+
+    if (typeof req.body.featuredType === 'string') {
+        nextFeaturedType = req.body.featuredType;
+        nextIsFeatured = nextFeaturedType !== 'none';
+    } else if (typeof req.body.isFeatured === 'boolean') {
+        nextIsFeatured = req.body.isFeatured;
+        nextFeaturedType = nextIsFeatured
+            ? currentFeaturedType === 'none'
+                ? 'hero'
+                : currentFeaturedType
+            : 'none';
+    } else {
+        nextFeaturedType = currentFeaturedType === 'none' ? 'hero' : 'none';
+        nextIsFeatured = nextFeaturedType !== 'none';
+    }
+
+    if (nextFeaturedType === 'hero') {
+        await demoteOtherHeroArticles(articleId);
+    }
+
     const updatedArticle = await articlesCollection().findOneAndUpdate({_id: articleId}, {
         $set: {
-            isFeatured: nextIsFeatured, updatedAt: new Date()
+            isFeatured: nextIsFeatured,
+            featuredType: nextFeaturedType,
+            featuredAt: nextFeaturedType === 'hero' ? new Date() : null,
+            updatedAt: new Date()
         }
     }, {returnDocument: 'after'});
 
@@ -445,7 +560,7 @@ export const publishArticleNow = async (req: Request, res: Response): Promise<vo
         return;
     }
 
-    const articleFound = await articlesCollection().findOne({_id: articleId});
+    const articleFound = await articlesCollection().findOne({_id: articleId, deletedAt: null});
     if (!articleFound) {
         res.status(404).json({message: 'Article not found'});
         return;
@@ -488,7 +603,7 @@ export const duplicateArticle = async (req: Request, res: Response): Promise<voi
         return;
     }
 
-    const articleFound = await articlesCollection().findOne({_id: articleId});
+    const articleFound = await articlesCollection().findOne({_id: articleId, deletedAt: null});
     if (!articleFound) {
         res.status(404).json({message: 'Article not found'});
         return;
@@ -505,7 +620,9 @@ export const duplicateArticle = async (req: Request, res: Response): Promise<voi
         featuredImageUrl: articleFound.featuredImageUrl,
         tags: articleFound.tags ?? [],
         status: 'draft',
-        isFeatured: articleFound.isFeatured,
+        isFeatured: false,
+        featuredType: 'none',
+        featuredAt: null,
         authorId: articleFound.authorId,
         categoryIds: articleFound.categoryIds,
         scheduledAt: null,
@@ -526,13 +643,93 @@ export const deleteArticle = async (req: Request, res: Response): Promise<void> 
         return;
     }
 
+    const articleFound = await articlesCollection().findOne({_id: articleId, deletedAt: null});
+    if (!articleFound) {
+        res.status(404).json({message: 'Article not found'});
+        return;
+    }
+
+    await articlesCollection().findOneAndUpdate(
+        {_id: articleId},
+        {
+            $set: {
+                deletedAt: new Date(),
+                isFeatured: false,
+                featuredType: 'none',
+                featuredAt: null,
+                updatedAt: new Date()
+            }
+        },
+        {returnDocument: 'after'}
+    );
+
+    res.status(200).json({message: 'Article moved to trash'});
+};
+
+export const listDeletedArticles = async (_req: Request, res: Response): Promise<void> => {
+    const articles = await articlesCollection()
+        .find(deletedArticleFilter())
+        .sort({deletedAt: -1, updatedAt: -1})
+        .toArray();
+
+    res.status(200).json({
+        items: articles.map(toArticleResponse),
+        total: articles.length
+    });
+};
+
+export const restoreArticle = async (req: Request, res: Response): Promise<void> => {
+    const articleId = parseObjectId(readParam(req.params.id));
+    if (!articleId) {
+        res.status(400).json({message: 'Invalid article id'});
+        return;
+    }
+
+    const articleFound = await articlesCollection().findOne({_id: articleId, ...deletedArticleFilter()});
+    if (!articleFound) {
+        res.status(404).json({message: 'Article not found'});
+        return;
+    }
+
+    const updatedArticle = await articlesCollection().findOneAndUpdate(
+        {_id: articleId},
+        {
+            $set: {
+                deletedAt: null,
+                updatedAt: new Date()
+            }
+        },
+        {returnDocument: 'after'}
+    );
+
+    if (!updatedArticle) {
+        res.status(404).json({message: 'Article not found'});
+        return;
+    }
+
+    res.status(200).json(toArticleResponse(updatedArticle));
+};
+
+export const purgeArticle = async (req: Request, res: Response): Promise<void> => {
+    const articleId = parseObjectId(readParam(req.params.id));
+    if (!articleId) {
+        res.status(400).json({message: 'Invalid article id'});
+        return;
+    }
+
+    const articleFound = await articlesCollection().findOne({_id: articleId, ...deletedArticleFilter()});
+    if (!articleFound) {
+        res.status(404).json({message: 'Article not found'});
+        return;
+    }
+
     const result = await articlesCollection().deleteOne({_id: articleId});
     if (!result.deletedCount) {
         res.status(404).json({message: 'Article not found'});
         return;
     }
 
-    res.status(200).json({message: 'Article deleted'});
+    res.status(200).json({message: 'Article deleted permanently'});
 };
 
 export const updateArticleStatus = async (req: Request, res: Response): Promise<void> => {
