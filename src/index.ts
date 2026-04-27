@@ -4,7 +4,7 @@ import { connectDatabase } from './db.js';
 import { ensureDatabaseIndexes } from './libs/db-indexes.js';
 import { ensureDefaultAdmin } from './modules/auth/auth.model.js';
 import { articlesCollection } from './modules/article/article.model.js';
-import { startNewsletterJob } from './modules/newsletter/newsletter.job.js';
+//import { startNewsletterJob } from './modules/newsletter/newsletter.job.js';
 import express from "express";
 
 const FEATURED_SWEEP_INTERVAL_MS = 60 * 60 * 1000;
