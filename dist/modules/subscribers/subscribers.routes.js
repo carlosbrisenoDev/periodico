@@ -1,0 +1,17 @@
+import { Router } from 'express';
+import { requireRole } from '../../middlewares/requireRole.js';
+import { validateBodySchema, validateParamsSchema } from '../../middlewares/validator.middleware.js';
+import { validateSubscriber, validateToken } from '../../middlewares/validateToken.js';
+import { changePassword, getUsers, login, logout, me, patchMe, patchUserActive, patchUserRole, register } from './subscribers.controller.js';
+import { changePasswordSchema, loginSchema, registerSchema, updateMeSchema, updateUserActiveSchema, updateUserRoleSchema, userIdParamsSchema } from './subscribers.schemas.js';
+const router = Router();
+router.post('/register', validateBodySchema(registerSchema), register);
+router.post('/login', validateBodySchema(loginSchema), login);
+router.post('/logout', validateSubscriber, logout);
+router.get('/me', validateSubscriber, me);
+router.patch('/me', validateSubscriber, validateBodySchema(updateMeSchema), patchMe);
+router.post('/change-password', validateSubscriber, validateBodySchema(changePasswordSchema), changePassword);
+router.get('/users', validateToken, requireRole('admin'), getUsers);
+router.patch('/users/:id/role', validateToken, requireRole('admin'), validateParamsSchema(userIdParamsSchema), validateBodySchema(updateUserRoleSchema), patchUserRole);
+router.patch('/users/:id/active', validateToken, requireRole('admin'), validateParamsSchema(userIdParamsSchema), validateBodySchema(updateUserActiveSchema), patchUserActive);
+export default router;

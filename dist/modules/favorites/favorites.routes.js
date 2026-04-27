@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import { validateBodySchema, validateParamsSchema } from '../../middlewares/validator.middleware.js';
+import { validateSubscriber } from '../../middlewares/validateToken.js';
+import { addFavorite, isFavorite, listFavorites, removeFavorite } from './favorites.controller.js';
+import { createFavoriteSchema, favoriteArticleParamsSchema } from './favorites.schemas.js';
+const router = Router();
+router.get('/', validateSubscriber, listFavorites);
+router.post('/', validateSubscriber, validateBodySchema(createFavoriteSchema), addFavorite);
+router.delete('/:articleId', validateSubscriber, validateParamsSchema(favoriteArticleParamsSchema), removeFavorite);
+router.get('/is-favorite/:articleId', validateSubscriber, validateParamsSchema(favoriteArticleParamsSchema), isFavorite);
+export default router;

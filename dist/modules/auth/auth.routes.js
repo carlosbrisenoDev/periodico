@@ -1,0 +1,17 @@
+import { Router } from "express";
+import { requireRole } from "../../middlewares/requireRole.js";
+import { validateBodySchema, validateParamsSchema } from "../../middlewares/validator.middleware.js";
+import { validateToken } from "../../middlewares/validateToken.js";
+import { changePassword, getUsers, login, logout, me, patchMe, patchUserActive, patchUserRole, register } from "./auth.controller.js";
+import { changePasswordSchema, loginSchema, registerSchema, updateMeSchema, updateUserActiveSchema, updateUserRoleSchema, userIdParamsSchema } from "./auth.schemas.js";
+const router = Router();
+router.post("/login", validateBodySchema(loginSchema), login);
+router.post("/register", validateToken, requireRole('admin'), validateBodySchema(registerSchema), register);
+router.post("/change-password", validateToken, validateBodySchema(changePasswordSchema), changePassword);
+router.post("/logout", validateToken, logout);
+router.get("/me", validateToken, me);
+router.patch("/me", validateToken, validateBodySchema(updateMeSchema), patchMe);
+router.get("/users", validateToken, requireRole('admin'), getUsers);
+router.patch("/users/:id/role", validateToken, requireRole('admin'), validateParamsSchema(userIdParamsSchema), validateBodySchema(updateUserRoleSchema), patchUserRole);
+router.patch("/users/:id/active", validateToken, requireRole('admin'), validateParamsSchema(userIdParamsSchema), validateBodySchema(updateUserActiveSchema), patchUserActive);
+export default router;

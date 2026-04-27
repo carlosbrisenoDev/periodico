@@ -1,0 +1,14 @@
+import mongoose, { Schema } from 'mongoose';
+import { createCollectionAdapter } from '../../libs/mongoose-adapter.js';
+const categorySchema = new Schema({
+    name: { type: String, required: true, trim: true },
+    slug: { type: String, required: true, trim: true, lowercase: true, unique: true, index: true },
+    description: { type: String, required: false }
+}, {
+    collection: 'categories',
+    versionKey: false,
+    timestamps: true
+});
+export const CategoryModel = mongoose.models.Category || mongoose.model('Category', categorySchema);
+const categoriesCollection = () => createCollectionAdapter(CategoryModel);
+export { categoriesCollection };

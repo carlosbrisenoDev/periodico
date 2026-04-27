@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import { requireRole } from '../../middlewares/requireRole.js';
+import { validateToken } from '../../middlewares/validateToken.js';
+import { validateParamsSchema, validateQuerySchema } from '../../middlewares/validator.middleware.js';
+import { deleteImage, listRecentImages, uploadImage } from './image.controller.js';
+import { uploadFeaturedImage } from './image.model.js';
+import { imageIdSchema, listImagesQuerySchema } from './image.schemas.js';
+const router = Router();
+router.get('/', validateToken, requireRole('admin', 'editor'), validateQuerySchema(listImagesQuerySchema), listRecentImages);
+router.post('/upload', validateToken, requireRole('admin', 'editor'), uploadFeaturedImage.single('image'), uploadImage);
+router.delete('/:id', validateToken, requireRole('admin', 'editor'), validateParamsSchema(imageIdSchema), deleteImage);
+export default router;
