@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const statusSchema = z.enum(['draft', 'published', 'scheduled']);
-const featuredTypeSchema = z.enum(['none', 'hero', 'headline', 'breaking']);
+const featuredTypeSchema = z.enum(['none', 'hero', 'headline', 'category_hero', 'breaking']);
 
 const tagsSchema = z
   .array(z.string().trim().min(1))

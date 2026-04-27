@@ -4,6 +4,7 @@ import { MongoServerError } from 'mongodb';
 import { env } from '../../config.js';
 import { signSubscriberToken } from '../../libs/jwt.js';
 import { AuthenticatedRequest } from '../../middlewares/validateToken.js';
+import { sendWelcomeEmail } from '../newsletter/welcome.js';
 import {
   createSubscriber,
   findSubscriberByEmail,
@@ -50,6 +51,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       passwordHash: await bcrypt.hash(password, 10),
       role
     });
+
+    // Fire-and-forget welcome email (don't block the response)
+    void sendWelcomeEmail(subscriber.email, subscriber.username);
 
     res.status(201).json({
       message: 'Subscriber created',

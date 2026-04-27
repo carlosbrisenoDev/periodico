@@ -16,6 +16,8 @@ export type AppEnv = Readonly<{
   EMAIL_USER: string;
   EMAIL_PASS: string;
   EMAIL_FROM: string;
+  NEWSLETTER_ARTICLES_COUNT: number;
+  NEWSLETTER_INTERVAL_MS: number;
 }>;
 
 export const env: AppEnv;

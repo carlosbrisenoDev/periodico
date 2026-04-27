@@ -4,7 +4,7 @@ import {authorsCollection} from '../author/author.model.js';
 import {categoriesCollection} from '../category/category.model.js';
 import {ArticleDoc, ArticleFeaturedType, articlesCollection} from './article.model.js';
 
-const FEATURED_TYPES = new Set<ArticleFeaturedType>(['none', 'hero', 'headline', 'breaking']);
+const FEATURED_TYPES = new Set<ArticleFeaturedType>(['none', 'hero', 'headline', 'category_hero', 'breaking']);
 const FEATURED_HERO_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 const isFeaturedType = (value: unknown): value is ArticleFeaturedType =>

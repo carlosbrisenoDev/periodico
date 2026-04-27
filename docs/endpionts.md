@@ -13,6 +13,8 @@ Este archivo es el **índice principal** para pruebas manuales de la API.
 - [Image](./src/modules/image/all.md)
 - [Public](./src/modules/public/all.md)
 - [Subscribers](./src/modules/subscribers/all.md)
+- [Favorites](./src/modules/favorites/all.md)
+- [Newsletter](./src/modules/newsletter/all.md)
 
 ## Flujo de datos (Mermaid)
 
@@ -28,6 +30,8 @@ flowchart LR
   A --> M7[Image]
   A --> M8[Public]
   A --> M9[Subscribers]
+  A --> M10[Favorites]
+  A --> M11[Newsletter]
 
   M1 --> J[JWT Cookie]
   M8 --> SJ[Subscriber JWT Cookie]
@@ -42,6 +46,8 @@ flowchart LR
   M7 --> DB
   M8 --> DB
   M9 --> DB
+  M10 --> DB
+  M11 --> DB
 
   M7 --> FS[(uploads/featured)]
   FS --> M8
@@ -120,6 +126,13 @@ erDiagram
     date updatedAt
   }
 
+  FAVORITES {
+    ObjectId _id PK
+    ObjectId subscriberId FK
+    ObjectId articleId FK
+    date addedAt
+  }
+
   IMAGES {
     ObjectId _id PK
     string filename
@@ -132,6 +145,8 @@ erDiagram
   AUTHORS ||--o{ ARTICLES : "authorId"
   AUTHORS ||--o{ SOCIALS : "authorId"
   CATEGORIES }o--o{ ARTICLES : "categoryIds[]"
+  SUBSCRIBERS ||--o{ FAVORITES : "subscriberId"
+  ARTICLES ||--o{ FAVORITES : "articleId"
 ```
 
 ## Cómo usar esta documentación
