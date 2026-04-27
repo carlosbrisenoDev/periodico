@@ -56,7 +56,13 @@ const bootstrap = async () => {
   // startNewsletterJob();
 };
 
+import fs from 'node:fs';
+
 bootstrap().catch((error) => {
-  process.stderr.write(`Startup error: ${error.message}\n`);
+  const errorMsg = `Startup error: ${error instanceof Error ? error.stack : error}\n`;
+  process.stderr.write(errorMsg);
+  try {
+    fs.writeFileSync('startup_error.log', errorMsg);
+  } catch (e) {}
   process.exit(1);
 });
