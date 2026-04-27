@@ -40,7 +40,7 @@ const sweepExpiredHeroArticles = async (): Promise<void> => {
   }
 };
 
-const bootstrap = async ()=> {
+const bootstrap = async () => {
   await connectDatabase();
   await ensureDatabaseIndexes();
   await ensureDefaultAdmin();
@@ -53,7 +53,7 @@ const bootstrap = async ()=> {
     process.stdout.write(`Server running on port ${env.PORT}\n`);
   });
   app.use('/uploads', express.static('uploads'));
-  startNewsletterJob();
+  // startNewsletterJob();
 };
 
 bootstrap().catch((error) => {
