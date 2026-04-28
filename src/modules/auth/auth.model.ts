@@ -149,6 +149,15 @@ export const updateOwnUser = async (id: string, input: UpdateOwnUserInput): Prom
   ).exec()) as UserDoc | null;
 };
 
+export const deleteUserById = async (id: string): Promise<boolean> => {
+  if (!Types.ObjectId.isValid(id)) {
+    return false;
+  }
+
+  const result = await UserModel.deleteOne({ _id: new Types.ObjectId(id) }).exec();
+  return result.deletedCount === 1;
+};
+
 export const ensureDefaultAdmin = async (): Promise<void> => {
   if (!env.ADMIN_EMAIL || !env.ADMIN_PASSWORD) {
     return;

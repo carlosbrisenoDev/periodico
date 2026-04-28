@@ -14,7 +14,8 @@ import {
   updateUserActive,
   updateUserPassword,
   updateUserRole,
-  UserDoc
+  UserDoc,
+  deleteUserById
 } from './auth.model.js';
 
 const cookieConfig = {
@@ -266,4 +267,21 @@ export const patchUser = async (req: AuthenticatedRequest, res: Response): Promi
     }
     throw error;
   }
+};
+
+export const deleteUser = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const id = readParam(req.params.id);
+
+  if (id === req.user?.userId) {
+    res.status(400).json({ message: 'Cannot delete yourself' });
+    return;
+  }
+
+  const deleted = await deleteUserById(id);
+  if (!deleted) {
+    res.status(404).json({ message: 'User not found' });
+    return;
+  }
+
+  res.status(200).json({ message: 'User deleted successfully' });
 };
