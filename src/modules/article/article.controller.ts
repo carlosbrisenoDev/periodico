@@ -36,26 +36,74 @@ const deletedArticleFilter = (): Filter<ArticleDoc> => ({
     deletedAt: { $exists: true, $ne: null }
 });
 
-const demoteOtherHeroArticles = async (articleId?: ObjectId): Promise<void> => {
-    const heroArticles = await articlesCollection().find({ featuredType: 'hero' }).toArray();
+const enforceFeaturedLimits = async (articleId: ObjectId | undefined, featuredType: string, categoryObjectIds: ObjectId[] = []): Promise<void> => {
+    if (featuredType === 'none') return;
 
-    await Promise.all(
-        heroArticles
-            .filter((article) => !articleId || article._id.toString() !== articleId.toString())
-            .map((article) =>
-                articlesCollection().updateOne(
-                    { _id: article._id },
-                    {
-                        $set: {
-                            isFeatured: false,
-                            featuredType: 'none',
-                            featuredAt: null,
-                            updatedAt: new Date()
-                        }
-                    }
+    if (featuredType === 'hero') {
+        const heroArticles = await articlesCollection().find({ featuredType: 'hero' }).toArray();
+        await Promise.all(
+            heroArticles
+                .filter((article) => !articleId || article._id.toString() !== articleId.toString())
+                .map((article) =>
+                    articlesCollection().updateOne(
+                        { _id: article._id },
+                        { $set: { isFeatured: false, featuredType: 'none', featuredAt: null, updatedAt: new Date() } }
+                    )
                 )
-            )
-    );
+        );
+    } else if (featuredType === 'headline') {
+        const headlineArticles = await articlesCollection()
+            .find({ featuredType: 'headline' })
+            .sort({ featuredAt: -1 })
+            .toArray();
+        
+        const others = headlineArticles.filter((article) => !articleId || article._id.toString() !== articleId.toString());
+        if (others.length > 1) {
+            const toDemote = others.slice(1);
+            await Promise.all(
+                toDemote.map((article) =>
+                    articlesCollection().updateOne(
+                        { _id: article._id },
+                        { $set: { isFeatured: false, featuredType: 'none', featuredAt: null, updatedAt: new Date() } }
+                    )
+                )
+            );
+        }
+    } else if (featuredType === 'category_hero' && categoryObjectIds.length > 0) {
+        const catHeroArticles = await articlesCollection()
+            .find({ featuredType: 'category_hero', categoryIds: { $in: categoryObjectIds } })
+            .toArray();
+        await Promise.all(
+            catHeroArticles
+                .filter((article) => !articleId || article._id.toString() !== articleId.toString())
+                .map((article) =>
+                    articlesCollection().updateOne(
+                        { _id: article._id },
+                        { $set: { isFeatured: false, featuredType: 'none', featuredAt: null, updatedAt: new Date() } }
+                    )
+                )
+        );
+    } else if (featuredType === 'breaking' && categoryObjectIds.length > 0) {
+        for (const catId of categoryObjectIds) {
+            const breakingArticles = await articlesCollection()
+                .find({ featuredType: 'breaking', categoryIds: catId })
+                .sort({ featuredAt: -1 })
+                .toArray();
+            
+            const others = breakingArticles.filter((article) => !articleId || article._id.toString() !== articleId.toString());
+            if (others.length > 1) {
+                const toDemote = others.slice(1);
+                await Promise.all(
+                    toDemote.map((article) =>
+                        articlesCollection().updateOne(
+                            { _id: article._id },
+                            { $set: { isFeatured: false, featuredType: 'none', featuredAt: null, updatedAt: new Date() } }
+                        )
+                    )
+                );
+            }
+        }
+    }
 };
 
 const readParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] : value ?? '');
@@ -248,8 +296,8 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
                     : 'none';
         const normalizedFeaturedAt = resolveFeaturedAt(normalizedFeaturedType);
 
-        if (normalizedFeaturedType === 'hero') {
-            await demoteOtherHeroArticles();
+        if (normalizedFeaturedType !== 'none') {
+            await enforceFeaturedLimits(undefined, normalizedFeaturedType, categoryObjectIds);
         }
 
         const article: ArticleDoc = {
@@ -393,8 +441,9 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
         updates.featuredType = nextFeaturedType;
         updates.featuredAt = nextFeaturedType === 'hero' ? new Date() : null;
 
-        if (nextFeaturedType === 'hero') {
-            await demoteOtherHeroArticles(articleId);
+        if (nextFeaturedType !== 'none') {
+            const articleCategories = updates.categoryIds || articleFound.categoryIds || [];
+            await enforceFeaturedLimits(articleId, nextFeaturedType, articleCategories as ObjectId[]);
         }
     }
     if (req.body.slug !== undefined || req.body.title !== undefined) {
@@ -532,8 +581,8 @@ export const updateArticleFeature = async (req: Request, res: Response): Promise
         nextIsFeatured = nextFeaturedType !== 'none';
     }
 
-    if (nextFeaturedType === 'hero') {
-        await demoteOtherHeroArticles(articleId);
+    if (nextFeaturedType !== 'none') {
+        await enforceFeaturedLimits(articleId, nextFeaturedType, articleFound.categoryIds || []);
     }
 
     const updatedArticle = await articlesCollection().findOneAndUpdate({_id: articleId}, {

@@ -21,18 +21,47 @@ const activeArticleFilter = () => ({ deletedAt: null });
 const deletedArticleFilter = () => ({
     deletedAt: { $exists: true, $ne: null }
 });
-const demoteOtherHeroArticles = async (articleId) => {
-    const heroArticles = await articlesCollection().find({ featuredType: 'hero' }).toArray();
-    await Promise.all(heroArticles
-        .filter((article) => !articleId || article._id.toString() !== articleId.toString())
-        .map((article) => articlesCollection().updateOne({ _id: article._id }, {
-        $set: {
-            isFeatured: false,
-            featuredType: 'none',
-            featuredAt: null,
-            updatedAt: new Date()
+const enforceFeaturedLimits = async (articleId, featuredType, categoryObjectIds = []) => {
+    if (featuredType === 'none')
+        return;
+    if (featuredType === 'hero') {
+        const heroArticles = await articlesCollection().find({ featuredType: 'hero' }).toArray();
+        await Promise.all(heroArticles
+            .filter((article) => !articleId || article._id.toString() !== articleId.toString())
+            .map((article) => articlesCollection().updateOne({ _id: article._id }, { $set: { isFeatured: false, featuredType: 'none', featuredAt: null, updatedAt: new Date() } })));
+    }
+    else if (featuredType === 'headline') {
+        const headlineArticles = await articlesCollection()
+            .find({ featuredType: 'headline' })
+            .sort({ featuredAt: -1 })
+            .toArray();
+        const others = headlineArticles.filter((article) => !articleId || article._id.toString() !== articleId.toString());
+        if (others.length > 1) {
+            const toDemote = others.slice(1);
+            await Promise.all(toDemote.map((article) => articlesCollection().updateOne({ _id: article._id }, { $set: { isFeatured: false, featuredType: 'none', featuredAt: null, updatedAt: new Date() } })));
         }
-    })));
+    }
+    else if (featuredType === 'category_hero' && categoryObjectIds.length > 0) {
+        const catHeroArticles = await articlesCollection()
+            .find({ featuredType: 'category_hero', categoryIds: { $in: categoryObjectIds } })
+            .toArray();
+        await Promise.all(catHeroArticles
+            .filter((article) => !articleId || article._id.toString() !== articleId.toString())
+            .map((article) => articlesCollection().updateOne({ _id: article._id }, { $set: { isFeatured: false, featuredType: 'none', featuredAt: null, updatedAt: new Date() } })));
+    }
+    else if (featuredType === 'breaking' && categoryObjectIds.length > 0) {
+        for (const catId of categoryObjectIds) {
+            const breakingArticles = await articlesCollection()
+                .find({ featuredType: 'breaking', categoryIds: catId })
+                .sort({ featuredAt: -1 })
+                .toArray();
+            const others = breakingArticles.filter((article) => !articleId || article._id.toString() !== articleId.toString());
+            if (others.length > 1) {
+                const toDemote = others.slice(1);
+                await Promise.all(toDemote.map((article) => articlesCollection().updateOne({ _id: article._id }, { $set: { isFeatured: false, featuredType: 'none', featuredAt: null, updatedAt: new Date() } })));
+            }
+        }
+    }
 };
 const readParam = (value) => (Array.isArray(value) ? value[0] : value ?? '');
 const toSlug = (value) => value
@@ -192,8 +221,8 @@ export const createArticle = async (req, res) => {
                 ? 'hero'
                 : 'none';
         const normalizedFeaturedAt = resolveFeaturedAt(normalizedFeaturedType);
-        if (normalizedFeaturedType === 'hero') {
-            await demoteOtherHeroArticles();
+        if (normalizedFeaturedType !== 'none') {
+            await enforceFeaturedLimits(undefined, normalizedFeaturedType, categoryObjectIds);
         }
         const article = {
             _id: new ObjectId(),
@@ -314,8 +343,9 @@ export const updateArticle = async (req, res) => {
         updates.isFeatured = nextFeaturedType !== 'none';
         updates.featuredType = nextFeaturedType;
         updates.featuredAt = nextFeaturedType === 'hero' ? new Date() : null;
-        if (nextFeaturedType === 'hero') {
-            await demoteOtherHeroArticles(articleId);
+        if (nextFeaturedType !== 'none') {
+            const articleCategories = updates.categoryIds || articleFound.categoryIds || [];
+            await enforceFeaturedLimits(articleId, nextFeaturedType, articleCategories);
         }
     }
     if (req.body.slug !== undefined || req.body.title !== undefined) {
@@ -443,8 +473,8 @@ export const updateArticleFeature = async (req, res) => {
         nextFeaturedType = currentFeaturedType === 'none' ? 'hero' : 'none';
         nextIsFeatured = nextFeaturedType !== 'none';
     }
-    if (nextFeaturedType === 'hero') {
-        await demoteOtherHeroArticles(articleId);
+    if (nextFeaturedType !== 'none') {
+        await enforceFeaturedLimits(articleId, nextFeaturedType, articleFound.categoryIds || []);
     }
     const updatedArticle = await articlesCollection().findOneAndUpdate({ _id: articleId }, {
         $set: {

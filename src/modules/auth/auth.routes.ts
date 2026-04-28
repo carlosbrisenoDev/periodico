@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireRole } from "../../middlewares/requireRole.js";
 import { validateBodySchema, validateParamsSchema } from "../../middlewares/validator.middleware.js";
 import { validateToken } from "../../middlewares/validateToken.js";
-import { changePassword, getUsers, login, logout, me, patchMe, patchUserActive, patchUserRole, register } from "./auth.controller.js";
+import { changePassword, getUsers, login, logout, me, patchMe, patchUser, patchUserActive, patchUserRole, register } from "./auth.controller.js";
 import {
   changePasswordSchema,
   loginSchema,
@@ -10,6 +10,7 @@ import {
   updateMeSchema,
   updateUserActiveSchema,
   updateUserRoleSchema,
+  updateUserSchema,
   userIdParamsSchema
 } from "./auth.schemas.js";
 
@@ -22,6 +23,14 @@ router.post("/logout", validateToken, logout);
 router.get("/me", validateToken, me);
 router.patch("/me", validateToken, validateBodySchema(updateMeSchema), patchMe);
 router.get("/users", validateToken, requireRole('admin'), getUsers);
+router.patch(
+  "/users/:id",
+  validateToken,
+  requireRole('admin'),
+  validateParamsSchema(userIdParamsSchema),
+  validateBodySchema(updateUserSchema),
+  patchUser
+);
 router.patch(
   "/users/:id/role",
   validateToken,

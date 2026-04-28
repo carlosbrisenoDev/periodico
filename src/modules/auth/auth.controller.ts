@@ -4,6 +4,7 @@ import { MongoServerError } from 'mongodb';
 import { env } from '../../config.js';
 import { signAuthToken } from '../../libs/jwt.js';
 import { AuthenticatedRequest } from '../../middlewares/validateToken.js';
+import { AuthorModel } from '../author/author.model.js';
 import {
   createUser,
   findUserByEmail,
@@ -138,6 +139,18 @@ export const register = async (req: AuthenticatedRequest, res: Response): Promis
       role
     });
 
+    if (role === 'admin') {
+      try {
+        await AuthorModel.create({
+          name: user.name,
+          bio: 'Administrador del sistema.',
+          userId: user._id
+        });
+      } catch (authorErr) {
+        console.error('Failed to auto-create author for admin', authorErr);
+      }
+    }
+
     res.status(201).json({
       message: 'User created',
       user: mapUserResponse(user)
@@ -221,4 +234,36 @@ export const patchUserActive = async (req: AuthenticatedRequest, res: Response):
     message: 'User active status updated successfully',
     user: mapUserResponse(updatedUser)
   });
+};
+
+export const patchUser = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const id = readParam(req.params.id);
+  const { name, email, role } = req.body;
+
+  try {
+    const updatedUser = await updateOwnUser(id, { name, email });
+    if (!updatedUser) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    let finalUser = updatedUser;
+    if (role && role !== updatedUser.role) {
+      const withRole = await updateUserRole(id, role);
+      if (withRole) {
+        finalUser = withRole;
+      }
+    }
+
+    res.status(200).json({
+      message: 'User updated successfully',
+      user: mapUserResponse(finalUser)
+    });
+  } catch (error) {
+    if (error instanceof MongoServerError && error.code === 11000) {
+      res.status(409).json({ message: 'Email already registered' });
+      return;
+    }
+    throw error;
+  }
 };

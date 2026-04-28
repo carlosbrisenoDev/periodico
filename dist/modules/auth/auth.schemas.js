@@ -35,3 +35,8 @@ export const updateUserRoleSchema = z.object({
 export const updateUserActiveSchema = z.object({
     active: z.boolean()
 });
+export const updateUserSchema = z.object({
+    name: z.string().trim().min(2).max(120).optional(),
+    email: z.string().email().toLowerCase().optional(),
+    role: z.enum(['admin', 'editor']).optional()
+});
