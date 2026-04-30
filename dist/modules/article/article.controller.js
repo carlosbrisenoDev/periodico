@@ -264,7 +264,7 @@ export const createArticle = async (req, res) => {
             authorId: authorObjectId,
             categoryIds: categoryObjectIds,
             scheduledAt: scheduledDate,
-            publishedAt: status === 'published' ? now : null,
+            publishedAt: status === 'published' ? (req.body.publishedAt ? new Date(req.body.publishedAt) : now) : null,
             views: 0,
             createdAt: now,
             updatedAt: now,
@@ -303,7 +303,11 @@ export const listArticles = async (_req, res) => {
     const total = await articlesCollection().countDocuments(filters);
     const limit = hasPage || hasLimit ? requestedLimit : total || 20;
     const totalPages = Math.max(1, Math.ceil(total / limit));
-    const cursor = articlesCollection().find(filters).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+    const cursor = articlesCollection()
+        .find(filters)
+        .sort({ publishedAt: -1, createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
     const articles = await cursor.toArray();
     res.status(200).json({
         items: articles.map(toArticleResponse), page, limit, total, totalPages
@@ -408,6 +412,9 @@ export const updateArticle = async (req, res) => {
         updates.categoryIds = categoryObjectIds;
         nextCategoryIds = categoryObjectIds;
     }
+    if (req.body.publishedAt !== undefined) {
+        updates.publishedAt = req.body.publishedAt ? new Date(req.body.publishedAt) : null;
+    }
     const hasScheduledAt = Object.prototype.hasOwnProperty.call(req.body, 'scheduledAt');
     const nextStatus = req.body.status ?? articleFound.status;
     const nextScheduledAt = hasScheduledAt ? req.body.scheduledAt ? new Date(req.body.scheduledAt) : null : articleFound.scheduledAt;
@@ -438,7 +445,7 @@ export const updateArticle = async (req, res) => {
         updates.status = req.body.status;
     }
     if (nextStatus === 'published') {
-        updates.publishedAt = articleFound.publishedAt ?? new Date();
+        updates.publishedAt = updates.publishedAt ?? articleFound.publishedAt ?? new Date();
         updates.scheduledAt = null;
     }
     else if (nextStatus === 'draft') {

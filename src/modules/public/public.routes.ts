@@ -9,6 +9,7 @@ import {
   getFeatured,
   getHome,
   getLatest,
+  getRecent,
   getSitemap,
   getTrending,
   getRecommendations,
@@ -30,6 +31,7 @@ router.get('/home', getHome);
 router.get('/categories', getCategories);
 router.get('/featured', getFeatured);
 router.get('/latest', getLatest);
+router.get('/recent', getRecent);
 router.get('/trending', validateQuerySchema(publicListSchema), getTrending);
 router.get('/recommendations', validateQuerySchema(publicRecommendationsSchema), getRecommendations);
 router.get('/archive/:year/:month', validateParamsSchema(publicArchiveSchema), getArchive);

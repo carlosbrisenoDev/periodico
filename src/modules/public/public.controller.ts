@@ -226,6 +226,24 @@ export const getFeatured = async (_req: Request, res: Response): Promise<void> =
   res.status(200).json(featured);
 };
 
+export const getRecent = async (_req: Request, res: Response): Promise<void> => {
+  await syncScheduledArticles();
+  const twoMonthsAgo = new Date();
+  twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+  const filter: any = isPublishableFilter();
+  filter.publishedAt = { $gte: twoMonthsAgo.toISOString() };
+
+  const articles = await publicArticlesCollection()
+    .find(filter)
+    .sort({ publishedAt: -1, createdAt: -1 })
+    .limit(100)
+    .toArray();
+
+  const normalized = await Promise.all(articles.map(toPublicArticle));
+  res.status(200).json(normalized);
+};
+
 export const getLatest = async (_req: Request, res: Response): Promise<void> => {
   const latest = await getPublicArticles({ limit: 8, sort: { createdAt: -1 } });
   res.status(200).json(latest);

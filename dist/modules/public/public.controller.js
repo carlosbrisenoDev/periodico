@@ -120,7 +120,7 @@ export const getHome = async (_req, res) => {
     const [recent, featured, latest] = await Promise.all([
         getPublicArticles({ limit: 12, sort: { publishedAt: -1, createdAt: -1 } }),
         getPublicArticles({
-            limit: 5,
+            limit: 50,
             sort: { publishedAt: -1, createdAt: -1 },
             isFeatured: true
         }),
@@ -139,6 +139,20 @@ export const getFeatured = async (_req, res) => {
         isFeatured: true
     });
     res.status(200).json(featured);
+};
+export const getRecent = async (_req, res) => {
+    await syncScheduledArticles();
+    const twoMonthsAgo = new Date();
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+    const filter = isPublishableFilter();
+    filter.publishedAt = { $gte: twoMonthsAgo.toISOString() };
+    const articles = await publicArticlesCollection()
+        .find(filter)
+        .sort({ publishedAt: -1, createdAt: -1 })
+        .limit(100)
+        .toArray();
+    const normalized = await Promise.all(articles.map(toPublicArticle));
+    res.status(200).json(normalized);
 };
 export const getLatest = async (_req, res) => {
     const latest = await getPublicArticles({ limit: 8, sort: { createdAt: -1 } });
