@@ -203,7 +203,7 @@ export const getHome = async (_req: Request, res: Response): Promise<void> => {
   const [recent, featured, latest] = await Promise.all([
     getPublicArticles({ limit: 12, sort: { publishedAt: -1, createdAt: -1 } }),
     getPublicArticles({
-      limit: 5,
+      limit: 50,
       sort: { publishedAt: -1, createdAt: -1 },
       isFeatured: true
     }),
