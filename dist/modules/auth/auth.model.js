@@ -79,6 +79,13 @@ export const updateOwnUser = async (id, input) => {
         $set: updates
     }, { new: true, lean: true }).exec());
 };
+export const deleteUserById = async (id) => {
+    if (!Types.ObjectId.isValid(id)) {
+        return false;
+    }
+    const result = await UserModel.deleteOne({ _id: new Types.ObjectId(id) }).exec();
+    return result.deletedCount === 1;
+};
 export const ensureDefaultAdmin = async () => {
     if (!env.ADMIN_EMAIL || !env.ADMIN_PASSWORD) {
         return;

@@ -69,6 +69,14 @@ export const createCollectionAdapter = <T>(model: Model<T>) => ({
     const result = await model.updateOne(filter, update).exec();
     return { matchedCount: result.matchedCount ?? 0 };
   },
+  updateMany: async (filter: any, update: any): Promise<{ matchedCount: number; modifiedCount: number }> => {
+    const isPipeline = Array.isArray(update);
+    const result = await model.updateMany(filter, update, isPipeline ? { updatePipeline: true } : {}).exec();
+    return { 
+      matchedCount: result.matchedCount ?? 0,
+      modifiedCount: result.modifiedCount ?? 0
+    };
+  },
   countDocuments: async (filter: any): Promise<number> => model.countDocuments(filter).exec(),
   aggregate: <R = T>(pipeline: unknown[]): AggregateAdapter<R> =>
     new AggregateAdapter<R>(model.aggregate(pipeline as any) as Aggregate<R[]>)

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { validateParamsSchema, validateQuerySchema } from '../../middlewares/validator.middleware.js';
-import { getArchive, getArticleBySlug, getArticlesByCategorySlug, getCategories, getFeatured, getHome, getLatest, getSitemap, getTrending, getRecommendations, searchArticles } from './public.controller.js';
-import { publicArchiveSchema, publicArticleSlugSchema, publicCategorySlugSchema, publicListSchema, publicRecommendationsSchema, publicSearchSchema } from './public.schemas.js';
+import { getArchive, getArticleBySlug, getArticleById, getArticlesByCategorySlug, getCategories, getFeatured, getHome, getLatest, getSitemap, getTrending, getRecommendations, searchArticles } from './public.controller.js';
+import { publicArchiveSchema, publicArticleIdSchema, publicArticleSlugSchema, publicCategorySlugSchema, publicListSchema, publicRecommendationsSchema, publicSearchSchema } from './public.schemas.js';
 const router = Router();
 router.get('/home', getHome);
 router.get('/categories', getCategories);
@@ -12,6 +12,7 @@ router.get('/recommendations', validateQuerySchema(publicRecommendationsSchema),
 router.get('/archive/:year/:month', validateParamsSchema(publicArchiveSchema), getArchive);
 router.get('/sitemap', getSitemap);
 router.get('/article/:slug', validateParamsSchema(publicArticleSlugSchema), getArticleBySlug);
+router.get('/article/id/:id', validateParamsSchema(publicArticleIdSchema), getArticleById);
 router.get('/category/:slug', validateParamsSchema(publicCategorySlugSchema), getArticlesByCategorySlug);
 router.get('/search', validateQuerySchema(publicSearchSchema), searchArticles);
 export default router;

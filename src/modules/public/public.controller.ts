@@ -7,6 +7,9 @@ import {
   publicCategoriesCollection,
   serializeObjectId
 } from './public.model.js';
+import { env } from '../../config.js';
+import { verifyAuthToken } from '../../libs/jwt.js';
+import { id } from 'zod/locales';
 
 const PUBLIC_API_BASE_PATH = '/api/v1/public';
 const FEATURED_HERO_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -23,6 +26,35 @@ const resolveFeaturedType = (article: { isFeatured: boolean; featuredType?: stri
 
   return article.isFeatured ? 'hero' : 'none';
 };
+
+/**
+ * Ensures that articles whose scheduled time has passed are marked as 'published'.
+ * This is called on-demand when public endpoints are requested.
+ */
+const syncScheduledArticles = async (): Promise<void> => {
+  const now = new Date();
+
+  // Find articles that are scheduled and their time has passed
+  const filter = {
+    status: 'scheduled',
+    scheduledAt: { $lte: now },
+    deletedAt: null
+  };
+
+  // We perform an updateMany to transition them
+  // We set status to 'published', set publishedAt to the scheduledAt value (or now if missing)
+  // and clear the scheduledAt field.
+  await publicArticlesCollection().updateMany(filter, [
+    {
+      $set: {
+        publishedAt: { $ifNull: ['$scheduledAt', now] },
+        status: 'published',
+        scheduledAt: null
+      }
+    }
+  ]);
+};
+
 
 const isActiveFeaturedArticle = (article: {
   isFeatured: boolean;
@@ -85,9 +117,11 @@ const toPublicArticle = async (article: {
     featuredAt: activeFeatured ? article.featuredAt : null,
     author: author
       ? {
-          id: serializeObjectId(author._id),
-          name: author.name
-        }
+        id: serializeObjectId(author._id),
+        name: author.name,
+        bio: author.bio ?? null,
+        avatarUrl: author.avatarUrl ?? null
+      }
       : null,
     categories: categories.map((category) => ({
       id: serializeObjectId(category._id),
@@ -107,6 +141,7 @@ const getPublicArticles = async (options: {
   sort: Record<string, 1 | -1>;
   isFeatured?: boolean;
 }): Promise<Record<string, unknown>[]> => {
+  await syncScheduledArticles();
   const filter: Record<string, unknown> = isPublishableFilter();
   if (options.isFeatured) {
     filter.isFeatured = true;
@@ -238,10 +273,11 @@ export const getCategories = async (_req: Request, res: Response): Promise<void>
 };
 
 export const getArticleBySlug = async (req: Request, res: Response): Promise<void> => {
+  await syncScheduledArticles();
   const { slug } = req.params;
   const article = await publicArticlesCollection().findOne({
     slug,
-    ...isPublishableFilter()
+    deletedAt: null
   });
 
   if (!article) {
@@ -249,11 +285,77 @@ export const getArticleBySlug = async (req: Request, res: Response): Promise<voi
     return;
   }
 
+  // Check if article is publishable
+  const now = new Date();
+  const isPublishable = article.status === 'published' || (article.status === 'scheduled' && article.scheduledAt && article.scheduledAt <= now);
+
+  if (!isPublishable) {
+    // If not publishable, check for admin session
+    const token = req.cookies?.[env.COOKIE_NAME];
+    let isAdmin = false;
+    if (token) {
+      try {
+        const user = verifyAuthToken(token);
+        if (user) isAdmin = true;
+      } catch (e) { }
+    }
+
+    if (!isAdmin) {
+      res.status(404).json({ message: 'Article not found' });
+      return;
+    }
+  }
+
+  await publicArticlesCollection().updateOne({ _id: article._id }, { $inc: { views: 1 } });
+  res.status(200).json(await toPublicArticle({ ...article, views: article.views + 1 }));
+};
+
+export const getArticleById = async (req: Request, res: Response): Promise<void> => {
+  await syncScheduledArticles();
+  const { id } = req.params as { id: string };
+  const articleObjectId = id && ObjectId.isValid(id) ? new ObjectId(id) : null;
+  if (!articleObjectId) {
+    res.status(400).json({ message: 'Invalid article id' });
+    return;
+  }
+
+  const article = await publicArticlesCollection().findOne({
+    _id: articleObjectId,
+    deletedAt: null
+  });
+
+  if (!article) {
+    res.status(404).json({ message: 'Article not found' });
+    return;
+  }
+
+  // Check if article is publishable
+  const now = new Date();
+  const isPublishable = article.status === 'published' || (article.status === 'scheduled' && article.scheduledAt && article.scheduledAt <= now);
+
+  if (!isPublishable) {
+    // If not publishable, check for admin session
+    const token = req.cookies?.[env.COOKIE_NAME];
+    let isAdmin = false;
+    if (token) {
+      try {
+        const user = verifyAuthToken(token);
+        if (user) isAdmin = true;
+      } catch (e) { }
+    }
+
+    if (!isAdmin) {
+      res.status(404).json({ message: 'Article not found' });
+      return;
+    }
+  }
+
   await publicArticlesCollection().updateOne({ _id: article._id }, { $inc: { views: 1 } });
   res.status(200).json(await toPublicArticle({ ...article, views: article.views + 1 }));
 };
 
 export const getArticlesByCategorySlug = async (req: Request, res: Response): Promise<void> => {
+  await syncScheduledArticles();
   const { slug } = req.params;
   const category = await publicCategoriesCollection().findOne({ slug });
   if (!category) {
@@ -277,16 +379,26 @@ export const getArticlesByCategorySlug = async (req: Request, res: Response): Pr
 };
 
 export const searchArticles = async (req: Request, res: Response): Promise<void> => {
+  await syncScheduledArticles();
   const query = String(req.query.q || '').trim();
-  const limit = Number(req.query.limit || 10);
+  const limit = Number(req.query.limit || 20);
+  const sortParam = String(req.query.sort || 'newest');
 
   const regex = new RegExp(query, 'i');
+
+  let sortObj: Record<string, 1 | -1> = { publishedAt: -1, createdAt: -1 };
+  if (sortParam === 'relevant') {
+    sortObj = { views: -1, publishedAt: -1 };
+  } else if (sortParam === 'oldest') {
+    sortObj = { publishedAt: 1, createdAt: 1 };
+  }
+
   const articles = await publicArticlesCollection()
     .find({
       ...isPublishableFilter(),
       $or: [{ title: { $regex: regex } }, { excerpt: { $regex: regex } }]
     })
-    .sort({ publishedAt: -1, createdAt: -1 })
+    .sort(sortObj)
     .limit(limit)
     .toArray();
 
@@ -298,6 +410,7 @@ export const searchArticles = async (req: Request, res: Response): Promise<void>
 };
 
 export const getRecommendations = async (req: Request, res: Response): Promise<void> => {
+  await syncScheduledArticles();
   const tags = normalizeRecommendationTags(String(req.query.tags || ''));
   const limit = Number(req.query.limit || 4);
   const excludeId = String(req.query.excludeId || '').trim();
@@ -312,7 +425,7 @@ export const getRecommendations = async (req: Request, res: Response): Promise<v
 
   const articles = await publicArticlesCollection()
     .find({
-      status: 'published',
+      ...isPublishableFilter(),
       publishedAt: { $gte: weekAgo },
       ...(excludeObjectId ? { _id: { $ne: excludeObjectId } } : {})
     })
@@ -324,8 +437,8 @@ export const getRecommendations = async (req: Request, res: Response): Promise<v
     .map((article) => {
       const matchedTags = tags.length
         ? article.tags
-            .map((tag) => tag.trim().toLowerCase())
-            .filter((tag) => normalizedTags.has(tag))
+          .map((tag) => tag.trim().toLowerCase())
+          .filter((tag) => normalizedTags.has(tag))
         : [];
 
       return {
@@ -365,6 +478,7 @@ export const getTrending = async (req: Request, res: Response): Promise<void> =>
 };
 
 export const getArchive = async (req: Request, res: Response): Promise<void> => {
+  await syncScheduledArticles();
   const year = Number(req.params.year);
   const month = Number(req.params.month);
 

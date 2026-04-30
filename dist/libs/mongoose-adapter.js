@@ -58,6 +58,14 @@ export const createCollectionAdapter = (model) => ({
         const result = await model.updateOne(filter, update).exec();
         return { matchedCount: result.matchedCount ?? 0 };
     },
+    updateMany: async (filter, update) => {
+        const isPipeline = Array.isArray(update);
+        const result = await model.updateMany(filter, update, isPipeline ? { updatePipeline: true } : {}).exec();
+        return {
+            matchedCount: result.matchedCount ?? 0,
+            modifiedCount: result.modifiedCount ?? 0
+        };
+    },
     countDocuments: async (filter) => model.countDocuments(filter).exec(),
     aggregate: (pipeline) => new AggregateAdapter(model.aggregate(pipeline))
 });

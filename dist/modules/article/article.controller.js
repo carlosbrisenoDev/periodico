@@ -21,6 +21,31 @@ const activeArticleFilter = () => ({ deletedAt: null });
 const deletedArticleFilter = () => ({
     deletedAt: { $exists: true, $ne: null }
 });
+/**
+ * Ensures that articles whose scheduled time has passed are marked as 'published'.
+ * This is called on-demand when article list or details are requested.
+ */
+const syncScheduledArticles = async () => {
+    const now = new Date();
+    // Find articles that are scheduled and their time has passed
+    const filter = {
+        status: 'scheduled',
+        scheduledAt: { $lte: now },
+        deletedAt: null
+    };
+    // We perform an updateMany to transition them
+    // We set status to 'published', set publishedAt to the scheduledAt value (or now if missing)
+    // and clear the scheduledAt field.
+    await articlesCollection().updateMany(filter, [
+        {
+            $set: {
+                publishedAt: { $ifNull: ['$scheduledAt', now] },
+                status: 'published',
+                scheduledAt: null
+            }
+        }
+    ]);
+};
 const enforceFeaturedLimits = async (articleId, featuredType, categoryObjectIds = []) => {
     if (featuredType === 'none')
         return;
@@ -257,6 +282,7 @@ export const createArticle = async (req, res) => {
     }
 };
 export const listArticles = async (_req, res) => {
+    await syncScheduledArticles();
     const queryStatus = readParam(_req.query.status);
     const queryText = readParam(_req.query.q).trim();
     const queryPage = readParam(_req.query.page);
@@ -284,6 +310,7 @@ export const listArticles = async (_req, res) => {
     });
 };
 export const getArticleById = async (req, res) => {
+    await syncScheduledArticles();
     const articleId = parseObjectId(readParam(req.params.id));
     if (!articleId) {
         res.status(400).json({ message: 'Invalid article id' });

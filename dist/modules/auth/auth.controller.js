@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs';
-import { MongoServerError } from 'mongodb';
+import { MongoServerError, ObjectId } from 'mongodb';
 import { env } from '../../config.js';
 import { signAuthToken } from '../../libs/jwt.js';
 import { AuthorModel } from '../author/author.model.js';
-import { createUser, findUserByEmail, findUserById, listUsers, updateOwnUser, updateUserActive, updateUserPassword, updateUserRole } from './auth.model.js';
+import { createUser, findUserByEmail, findUserById, listUsers, updateOwnUser, updateUserActive, updateUserPassword, updateUserRole, deleteUserById } from './auth.model.js';
 const cookieConfig = {
     httpOnly: true,
     sameSite: 'lax',
@@ -216,4 +216,28 @@ export const patchUser = async (req, res) => {
         }
         throw error;
     }
+};
+export const deleteUser = async (req, res) => {
+    const id = readParam(req.params.id);
+    if (id === req.user?.userId) {
+        res.status(400).json({ message: 'Cannot delete yourself' });
+        return;
+    }
+    if (!ObjectId.isValid(id)) {
+        res.status(400).json({ message: 'Invalid user id' });
+        return;
+    }
+    // Delete associated authors first
+    try {
+        await AuthorModel.deleteMany({ userId: new ObjectId(id) });
+    }
+    catch (err) {
+        console.error('Failed to delete associated authors', err);
+    }
+    const deleted = await deleteUserById(id);
+    if (!deleted) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+    }
+    res.status(200).json({ message: 'User deleted successfully' });
 };

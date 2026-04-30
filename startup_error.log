@@ -1,0 +1,11 @@
+Startup error: MongoParseError: Username contains unescaped characters [linux
+    at new ConnectionString (/Users/carlos/Documents/Trabajo/creados/periodico/node_modules/mongodb-connection-string-url/src/index.ts:158:15)
+    at parseOptions (/Users/carlos/Documents/Trabajo/creados/periodico/node_modules/mongodb/src/connection_string.ts:251:15)
+    at new MongoClient (/Users/carlos/Documents/Trabajo/creados/periodico/node_modules/mongodb/src/mongo_client.ts:421:32)
+    at NativeConnection.createClient (/Users/carlos/Documents/Trabajo/creados/periodico/node_modules/mongoose/lib/drivers/node-mongodb-native/connection.js:338:14)
+    at NativeConnection.openUri (/Users/carlos/Documents/Trabajo/creados/periodico/node_modules/mongoose/lib/connection.js:1086:34)
+    at Mongoose.connect (/Users/carlos/Documents/Trabajo/creados/periodico/node_modules/mongoose/lib/mongoose.js:475:15)
+    at connectDatabase (/Users/carlos/Documents/Trabajo/creados/periodico/src/db.ts:11:18)
+    at bootstrap (/Users/carlos/Documents/Trabajo/creados/periodico/src/index.ts:44:9)
+    at <anonymous> (/Users/carlos/Documents/Trabajo/creados/periodico/src/index.ts:61:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)

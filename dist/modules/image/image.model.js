@@ -20,8 +20,7 @@ const uploadDirectory = path.resolve('uploads/featured');
 mkdirSync(uploadDirectory, { recursive: true });
 const MIME_EXTENSION_MAP = {
     'image/jpeg': '.jpg',
-    'image/png': '.png',
-    'image/webp': '.webp'
+    'image/png': '.png'
 };
 const sanitizeBaseName = (value) => {
     const normalized = value
@@ -57,7 +56,7 @@ export const uploadFeaturedImage = multer({
     storage,
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
-        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        const allowedMimeTypes = ['image/jpeg', 'image/png'];
         cb(null, allowedMimeTypes.includes(file.mimetype));
     }
 });

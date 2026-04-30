@@ -3,6 +3,7 @@ import { validateParamsSchema, validateQuerySchema } from '../../middlewares/val
 import {
   getArchive,
   getArticleBySlug,
+  getArticleById,
   getArticlesByCategorySlug,
   getCategories,
   getFeatured,
@@ -15,6 +16,7 @@ import {
 } from './public.controller.js';
 import {
   publicArchiveSchema,
+  publicArticleIdSchema,
   publicArticleSlugSchema,
   publicCategorySlugSchema,
   publicListSchema,
@@ -33,6 +35,7 @@ router.get('/recommendations', validateQuerySchema(publicRecommendationsSchema),
 router.get('/archive/:year/:month', validateParamsSchema(publicArchiveSchema), getArchive);
 router.get('/sitemap', getSitemap);
 router.get('/article/:slug', validateParamsSchema(publicArticleSlugSchema), getArticleBySlug);
+router.get('/article/id/:id', validateParamsSchema(publicArticleIdSchema), getArticleById);
 router.get('/category/:slug', validateParamsSchema(publicCategorySlugSchema), getArticlesByCategorySlug);
 router.get('/search', validateQuerySchema(publicSearchSchema), searchArticles);
 

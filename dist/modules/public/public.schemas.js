@@ -7,7 +7,8 @@ export const publicCategorySlugSchema = z.object({
 });
 export const publicSearchSchema = z.object({
     q: z.string().min(1),
-    limit: z.coerce.number().int().min(1).max(50).default(10)
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    sort: z.enum(['relevant', 'newest', 'oldest']).default('newest')
 });
 export const publicRecommendationsSchema = z.object({
     tags: z.string().trim().optional(),
@@ -20,4 +21,7 @@ export const publicListSchema = z.object({
 export const publicArchiveSchema = z.object({
     year: z.string().regex(/^\d{4}$/),
     month: z.string().regex(/^(0?[1-9]|1[0-2])$/)
+});
+export const publicArticleIdSchema = z.object({
+    id: z.string().min(1)
 });

@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
-import { MongoServerError } from 'mongodb';
+import { MongoServerError, ObjectId } from 'mongodb';
 import { env } from '../../config.js';
 import { signAuthToken } from '../../libs/jwt.js';
 import { AuthenticatedRequest } from '../../middlewares/validateToken.js';
@@ -275,6 +275,18 @@ export const deleteUser = async (req: AuthenticatedRequest, res: Response): Prom
   if (id === req.user?.userId) {
     res.status(400).json({ message: 'Cannot delete yourself' });
     return;
+  }
+
+  if (!ObjectId.isValid(id)) {
+    res.status(400).json({ message: 'Invalid user id' });
+    return;
+  }
+
+  // Delete associated authors first
+  try {
+    await AuthorModel.deleteMany({ userId: new ObjectId(id) });
+  } catch (err) {
+    console.error('Failed to delete associated authors', err);
   }
 
   const deleted = await deleteUserById(id);

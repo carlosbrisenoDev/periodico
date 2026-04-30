@@ -36,6 +36,35 @@ const deletedArticleFilter = (): Filter<ArticleDoc> => ({
     deletedAt: { $exists: true, $ne: null }
 });
 
+/**
+ * Ensures that articles whose scheduled time has passed are marked as 'published'.
+ * This is called on-demand when article list or details are requested.
+ */
+const syncScheduledArticles = async (): Promise<void> => {
+    const now = new Date();
+    
+    // Find articles that are scheduled and their time has passed
+    const filter = {
+        status: 'scheduled',
+        scheduledAt: { $lte: now },
+        deletedAt: null
+    };
+
+    // We perform an updateMany to transition them
+    // We set status to 'published', set publishedAt to the scheduledAt value (or now if missing)
+    // and clear the scheduledAt field.
+    await articlesCollection().updateMany(filter as Filter<ArticleDoc>, [
+        {
+            $set: {
+                publishedAt: { $ifNull: ['$scheduledAt', now] },
+                status: 'published',
+                scheduledAt: null
+            }
+        }
+    ]);
+};
+
+
 const enforceFeaturedLimits = async (articleId: ObjectId | undefined, featuredType: string, categoryObjectIds: ObjectId[] = []): Promise<void> => {
     if (featuredType === 'none') return;
 
@@ -335,6 +364,7 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
 };
 
 export const listArticles = async (_req: Request, res: Response): Promise<void> => {
+    await syncScheduledArticles();
     const queryStatus = readParam(_req.query.status as string | string[] | undefined);
     const queryText = readParam(_req.query.q as string | string[] | undefined).trim();
     const queryPage = readParam(_req.query.page as string | string[] | undefined);
@@ -369,6 +399,7 @@ export const listArticles = async (_req: Request, res: Response): Promise<void> 
 };
 
 export const getArticleById = async (req: Request, res: Response): Promise<void> => {
+    await syncScheduledArticles();
     const articleId = parseObjectId(readParam(req.params.id));
     if (!articleId) {
         res.status(400).json({message: 'Invalid article id'});
