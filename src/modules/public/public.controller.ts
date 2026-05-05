@@ -383,7 +383,7 @@ export const getArticlesByCategorySlug = async (req: Request, res: Response): Pr
 
   const articles = await publicArticlesCollection()
     .find({ ...isPublishableFilter(), categoryIds: category._id })
-    .sort({ publishedAt: -1, createdAt: -1 })
+    .sort({ isFeatured: -1, featuredAt: -1, publishedAt: -1, createdAt: -1 })
     .toArray();
 
   res.status(200).json({
