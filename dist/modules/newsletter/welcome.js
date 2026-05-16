@@ -5,7 +5,7 @@ const createTransport = () => nodemailer.createTransport({
     port: Number(env.EMAIL_PORT) || 587,
     secure: false,
     auth: {
-        user: "Informacion de altura",
+        user: env.EMAIL_USER,
         pass: env.EMAIL_PASS,
     },
 });
