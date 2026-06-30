@@ -3,7 +3,7 @@ import mongoose, { Schema, Types } from 'mongoose';
 import { env } from '../../config.js';
 import { createCollectionAdapter } from '../../libs/mongoose-adapter.js';
 
-export type UserRole = 'admin' | 'editor';
+export type UserRole = 'admin' | 'editor' | 'journalist';
 
 export type UserDoc = {
   _id: Types.ObjectId;
@@ -33,7 +33,7 @@ const userSchema = new Schema<UserDoc>(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true, index: true, unique: true },
     passwordHash: { type: String, required: true },
-    role: { type: String, required: true, enum: ['admin', 'editor'], default: 'editor' },
+    role: { type: String, required: true, enum: ['admin', 'editor', 'journalist'], default: 'editor' },
     active: { type: Boolean, default: true }
   },
   {

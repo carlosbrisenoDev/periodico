@@ -5,7 +5,10 @@ const subscriberSchema = new Schema({
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['admin', 'subscriber'], default: 'subscriber' },
     status: { type: String, enum: ['active', 'suspended', 'deleted', 'pending'], default: 'active' },
-    active: { type: Boolean, default: true }
+    active: { type: Boolean, default: true },
+    age: { type: Number, required: false },
+    phone: { type: String, required: false, trim: true },
+    location: { type: String, required: false, trim: true }
 }, {
     collection: 'subscribers',
     versionKey: false,
@@ -20,7 +23,10 @@ export const createSubscriber = async (input) => {
         passwordHash: input.passwordHash,
         role: input.role ?? 'subscriber',
         status: input.status ?? 'active',
-        active: input.active ?? true
+        active: input.active ?? true,
+        age: input.age,
+        phone: input.phone?.trim(),
+        location: input.location?.trim()
     });
     return subscriber.toObject();
 };
@@ -58,6 +64,15 @@ export const updateOwnSubscriber = async (id, input) => {
     }
     if (input.email !== undefined) {
         updates.email = normalizeEmail(input.email);
+    }
+    if (input.age !== undefined) {
+        updates.age = input.age;
+    }
+    if (input.phone !== undefined) {
+        updates.phone = input.phone.trim();
+    }
+    if (input.location !== undefined) {
+        updates.location = input.location.trim();
     }
     return (await SubscriberModel.findOneAndUpdate({ _id: new Types.ObjectId(id) }, {
         $set: updates

@@ -17,10 +17,13 @@ const mapSubscriberResponse = (subscriber) => ({
     email: subscriber.email,
     role: subscriber.role,
     status: subscriber.status,
-    active: subscriber.active
+    active: subscriber.active,
+    age: subscriber.age,
+    phone: subscriber.phone,
+    location: subscriber.location
 });
 export const register = async (req, res) => {
-    const { username, email, password, role } = req.body;
+    const { username, email, password, role, age, phone, location } = req.body;
     const existingSubscriber = await findSubscriberByEmail(email);
     if (existingSubscriber) {
         res.status(409).json({ message: 'Email already registered' });
@@ -31,7 +34,10 @@ export const register = async (req, res) => {
             username,
             email,
             passwordHash: await bcrypt.hash(password, 10),
-            role
+            role,
+            age,
+            phone,
+            location
         });
         // Fire-and-forget welcome email (don't block the response)
         void sendWelcomeEmail(subscriber.email, subscriber.username);

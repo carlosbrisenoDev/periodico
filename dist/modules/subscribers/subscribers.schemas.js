@@ -3,7 +3,10 @@ export const registerSchema = z.object({
     username: z.string().trim().min(1),
     email: z.email(),
     password: z.string().min(8),
-    role: z.enum(['admin', 'subscriber']).optional()
+    role: z.enum(['admin', 'subscriber']).optional(),
+    age: z.number().int().positive().optional(),
+    phone: z.string().trim().optional(),
+    location: z.string().trim().optional()
 });
 export const loginSchema = z.object({
     email: z.email(),
@@ -16,9 +19,16 @@ export const changePasswordSchema = z.object({
 export const updateMeSchema = z
     .object({
     username: z.string().trim().min(1).optional(),
-    email: z.email().optional()
+    email: z.email().optional(),
+    age: z.number().int().positive().optional(),
+    phone: z.string().trim().optional(),
+    location: z.string().trim().optional()
 })
-    .refine((payload) => payload.username !== undefined || payload.email !== undefined, {
+    .refine((payload) => payload.username !== undefined ||
+    payload.email !== undefined ||
+    payload.age !== undefined ||
+    payload.phone !== undefined ||
+    payload.location !== undefined, {
     message: 'At least one field is required'
 });
 export const updateUserRoleSchema = z.object({

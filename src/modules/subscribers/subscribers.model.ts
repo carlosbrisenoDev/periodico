@@ -11,6 +11,9 @@ export type SubscriberDoc = {
   role: SubscriberRole;
   status: SubscriberStatus;
   active: boolean;
+  age?: number;
+  phone?: string;
+  location?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -22,11 +25,17 @@ export type CreateSubscriberInput = {
   role?: SubscriberRole;
   status?: SubscriberStatus;
   active?: boolean;
+  age?: number;
+  phone?: string;
+  location?: string;
 };
 
 export type UpdateOwnSubscriberInput = {
   username?: string;
   email?: string;
+  age?: number;
+  phone?: string;
+  location?: string;
 };
 
 const subscriberSchema = new Schema<SubscriberDoc>(
@@ -36,7 +45,10 @@ const subscriberSchema = new Schema<SubscriberDoc>(
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['admin', 'subscriber'], default: 'subscriber' },
     status: { type: String, enum: ['active', 'suspended', 'deleted', 'pending'], default: 'active' },
-    active: { type: Boolean, default: true }
+    active: { type: Boolean, default: true },
+    age: { type: Number, required: false },
+    phone: { type: String, required: false, trim: true },
+    location: { type: String, required: false, trim: true }
   },
   {
     collection: 'subscribers',
@@ -56,7 +68,10 @@ export const createSubscriber = async (input: CreateSubscriberInput): Promise<Su
     passwordHash: input.passwordHash,
     role: input.role ?? 'subscriber',
     status: input.status ?? 'active',
-    active: input.active ?? true
+    active: input.active ?? true,
+    age: input.age,
+    phone: input.phone?.trim(),
+    location: input.location?.trim()
   });
 
   return subscriber.toObject() as SubscriberDoc;
@@ -117,6 +132,9 @@ export const updateOwnSubscriber = async (id: string, input: UpdateOwnSubscriber
     updatedAt: Date;
     username?: string;
     email?: string;
+    age?: number;
+    phone?: string;
+    location?: string;
   } = {
     updatedAt: new Date()
   };
@@ -127,6 +145,18 @@ export const updateOwnSubscriber = async (id: string, input: UpdateOwnSubscriber
 
   if (input.email !== undefined) {
     updates.email = normalizeEmail(input.email);
+  }
+
+  if (input.age !== undefined) {
+    updates.age = input.age;
+  }
+
+  if (input.phone !== undefined) {
+    updates.phone = input.phone.trim();
+  }
+
+  if (input.location !== undefined) {
+    updates.location = input.location.trim();
   }
 
   return (await SubscriberModel.findOneAndUpdate(

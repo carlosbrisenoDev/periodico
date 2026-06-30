@@ -6,6 +6,8 @@ export type CategoryDoc = {
   name: string;
   slug: string;
   description?: string;
+  order: number;
+  color?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -14,7 +16,9 @@ const categorySchema = new Schema<CategoryDoc>(
   {
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, trim: true, lowercase: true, unique: true, index: true },
-    description: { type: String, required: false }
+    description: { type: String, required: false },
+    order: { type: Number, default: 0 },
+    color: { type: String, required: false, trim: true }
   },
   {
     collection: 'categories',

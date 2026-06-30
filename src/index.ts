@@ -40,13 +40,34 @@ const sweepExpiredHeroArticles = async (): Promise<void> => {
   }
 };
 
+const sweepScheduledArticles = async (): Promise<void> => {
+  try {
+    const now = new Date();
+    await articlesCollection().updateMany(
+      { status: 'scheduled', scheduledAt: { $lte: now } },
+      {
+        $set: {
+          status: 'published',
+          publishedAt: now,
+          updatedAt: now,
+        },
+      }
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`Scheduled sweep error: ${message}\n`);
+  }
+};
+
 const bootstrap = async () => {
   await connectDatabase();
   await ensureDatabaseIndexes();
   await ensureDefaultAdmin();
   await sweepExpiredHeroArticles();
+  await sweepScheduledArticles();
   setInterval(() => {
     void sweepExpiredHeroArticles();
+    void sweepScheduledArticles();
   }, FEATURED_SWEEP_INTERVAL_MS);
 
   app.listen(env.PORT, () => {

@@ -8,7 +8,7 @@ const toSlug = (value) => value
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
 export const createCategory = async (req, res) => {
-    const { name, slug, description } = req.body;
+    const { name, slug, description, order } = req.body;
     const categorySlug = toSlug(slug ?? name);
     const existingCategory = await categoriesCollection().findOne({ slug: categorySlug });
     if (existingCategory) {
@@ -22,10 +22,11 @@ export const createCategory = async (req, res) => {
             name,
             slug: categorySlug,
             description,
+            order: typeof order === 'number' ? order : 0,
             createdAt: now,
             updatedAt: now
         });
-        res.status(201).json({ id: result.insertedId.toString(), name, slug: categorySlug, description });
+        res.status(201).json({ id: result.insertedId.toString(), name, slug: categorySlug, description, order: typeof order === 'number' ? order : 0 });
     }
     catch (error) {
         if (error instanceof MongoServerError && error.code === 11000) {
@@ -36,12 +37,13 @@ export const createCategory = async (req, res) => {
     }
 };
 export const listCategories = async (_req, res) => {
-    const categories = await categoriesCollection().find({}).sort({ createdAt: -1 }).toArray();
+    const categories = await categoriesCollection().find({}).sort({ order: 1, createdAt: -1 }).toArray();
     res.status(200).json(categories.map((category) => ({
         id: category._id.toString(),
         name: category.name,
         slug: category.slug,
         description: category.description,
+        order: category.order ?? 0,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
     })));
@@ -62,6 +64,7 @@ export const getCategoryById = async (req, res) => {
         name: category.name,
         slug: category.slug,
         description: category.description,
+        order: category.order ?? 0,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
     });
@@ -82,6 +85,7 @@ export const getCategoryBySlug = async (req, res) => {
         name: category.name,
         slug: category.slug,
         description: category.description,
+        order: category.order ?? 0,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
     });
@@ -98,6 +102,9 @@ export const updateCategory = async (req, res) => {
     }
     if (req.body.description !== undefined) {
         updates.description = req.body.description;
+    }
+    if (req.body.order !== undefined) {
+        updates.order = req.body.order;
     }
     if (req.body.slug || req.body.name) {
         updates.slug = toSlug(req.body.slug ?? req.body.name);
@@ -133,6 +140,7 @@ export const updateCategory = async (req, res) => {
         name: result.name,
         slug: result.slug,
         description: result.description,
+        order: result.order ?? 0,
         createdAt: result.createdAt,
         updatedAt: result.updatedAt
     });

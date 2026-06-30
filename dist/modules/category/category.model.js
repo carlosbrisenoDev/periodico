@@ -3,7 +3,9 @@ import { createCollectionAdapter } from '../../libs/mongoose-adapter.js';
 const categorySchema = new Schema({
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, trim: true, lowercase: true, unique: true, index: true },
-    description: { type: String, required: false }
+    description: { type: String, required: false },
+    order: { type: Number, default: 0 },
+    color: { type: String, required: false, trim: true }
 }, {
     collection: 'categories',
     versionKey: false,

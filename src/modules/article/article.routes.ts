@@ -33,7 +33,7 @@ router.get('/', validateQuerySchema(listArticlesQuerySchema), listArticles);
 router.get('/deleted', validateToken, requireRole('admin'), listDeletedArticles);
 router.get('/slug/:slug', validateParamsSchema(articleSlugSchema), getArticleBySlug);
 router.get('/:id', validateParamsSchema(articleIdSchema), getArticleById);
-router.post('/', validateToken, requireRole('admin', 'editor'), validateBodySchema(createArticleSchema), createArticle);
+router.post('/', validateToken, requireRole('admin', 'editor', 'journalist'), validateBodySchema(createArticleSchema), createArticle);
 router.patch(
   '/:id/feature',
   validateToken,
@@ -57,7 +57,7 @@ router.patch(
 router.patch(
   '/:id',
   validateToken,
-  requireRole('admin', 'editor'),
+  requireRole('admin', 'editor', 'journalist'),
   validateParamsSchema(articleIdSchema),
   validateBodySchema(updateArticleSchema),
   updateArticle

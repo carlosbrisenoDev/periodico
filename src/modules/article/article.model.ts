@@ -11,9 +11,13 @@ export type ArticleDoc = {
     excerpt: string;
     content: string;
     featuredImageUrl: string | null;
+    featuredImageCaption: string | null;
+    isVideoGallery: boolean;
+    videoUrl: string | null;
     tags: string[];
     status: ArticleStatus;
     isFeatured: boolean;
+    allowComments: boolean;
     featuredType: ArticleFeaturedType;
     featuredAt: Date | null;
     deletedAt: Date | null;
@@ -53,6 +57,20 @@ const articleSchema = new Schema<ArticleDoc>({
         required: false,
         default: null
     },
+    featuredImageCaption: {
+        type: String,
+        required: false,
+        default: null
+    },
+    isVideoGallery: {
+        type: Boolean,
+        default: false
+    },
+    videoUrl: {
+        type: String,
+        required: false,
+        default: null
+    },
     tags: {
         type: [String],
         default: []
@@ -66,6 +84,10 @@ const articleSchema = new Schema<ArticleDoc>({
         type: Boolean,
         default: false,
         index: true
+    },
+    allowComments: {
+        type: Boolean,
+        default: true
     },
     featuredType: {
         type: String,

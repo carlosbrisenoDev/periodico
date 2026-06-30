@@ -151,9 +151,13 @@ const toArticleResponse = (article: ArticleDoc) => ({
     excerpt: article.excerpt,
     content: article.content,
     featuredImageUrl: article.featuredImageUrl,
+    featuredImageCaption: article.featuredImageCaption,
+    isVideoGallery: article.isVideoGallery ?? false,
+    videoUrl: article.videoUrl ?? null,
     tags: article.tags ?? [],
     status: article.status,
     isFeatured: article.isFeatured,
+    allowComments: article.allowComments ?? true,
     featuredType: resolveFeaturedType(article),
     featuredAt: article.featuredAt,
     deletedAt: article.deletedAt,
@@ -268,13 +272,25 @@ const generateUniqueSlug = async (base: string, currentId?: ObjectId): Promise<s
 export const createArticle = async (req: Request, res: Response): Promise<void> => {
     try {
         const {
-            title, slug, excerpt, content, featuredImageUrl, tags, status, isFeatured, featuredType, authorId, categoryIds, scheduledAt
+            title, slug, excerpt, content, featuredImageUrl, featuredImageCaption, isVideoGallery, videoUrl, tags, status, isFeatured, allowComments, featuredType, authorId, categoryIds, scheduledAt
         } = req.body;
 
         const authorObjectId = parseObjectId(authorId);
         if (!authorObjectId) {
             res.status(400).json({message: 'Invalid authorId'});
             return;
+        }
+
+        const authReq = req as any;
+        if (authReq.user?.role === 'journalist') {
+            if (authorObjectId.toString() !== authReq.user.userId) {
+                res.status(403).json({message: 'Journalists can only create articles for themselves'});
+                return;
+            }
+            if (status === 'published') {
+                res.status(403).json({message: 'Journalists cannot publish articles'});
+                return;
+            }
         }
 
         const categoryObjectIds = parseObjectIdArray(categoryIds);
@@ -336,9 +352,13 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
             excerpt,
             content,
             featuredImageUrl: featuredImageUrl ?? null,
+            featuredImageCaption: featuredImageCaption ?? null,
+            isVideoGallery: typeof isVideoGallery === 'boolean' ? isVideoGallery : false,
+            videoUrl: videoUrl ?? null,
             tags: normalizeTags(tags),
             status,
             isFeatured: normalizedFeaturedType !== 'none',
+            allowComments: typeof allowComments === 'boolean' ? allowComments : true,
             featuredType: normalizedFeaturedType as ArticleDoc['featuredType'],
             featuredAt: normalizedFeaturedAt,
             authorId: authorObjectId,
@@ -443,6 +463,18 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
         return;
     }
 
+    const authReq = req as any;
+    if (authReq.user?.role === 'journalist') {
+        if (articleFound.authorId.toString() !== authReq.user.userId) {
+            res.status(403).json({message: 'Journalists can only edit their own articles'});
+            return;
+        }
+        if (req.body.status === 'published') {
+            res.status(403).json({message: 'Journalists cannot publish articles'});
+            return;
+        }
+    }
+
     const updates: Record<string, unknown> = {};
     let nextAuthorId = articleFound.authorId;
     let nextCategoryIds = articleFound.categoryIds;
@@ -459,8 +491,20 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
     if (req.body.featuredImageUrl !== undefined) {
         updates.featuredImageUrl = req.body.featuredImageUrl;
     }
+    if (req.body.featuredImageCaption !== undefined) {
+        updates.featuredImageCaption = req.body.featuredImageCaption;
+    }
+    if (req.body.isVideoGallery !== undefined) {
+        updates.isVideoGallery = typeof req.body.isVideoGallery === 'boolean' ? req.body.isVideoGallery : false;
+    }
+    if (req.body.videoUrl !== undefined) {
+        updates.videoUrl = req.body.videoUrl;
+    }
     if (req.body.tags !== undefined) {
         updates.tags = normalizeTags(req.body.tags);
+    }
+    if (req.body.allowComments !== undefined) {
+        updates.allowComments = typeof req.body.allowComments === 'boolean' ? req.body.allowComments : true;
     }
     const requestedFeaturedType =
         typeof req.body.featuredType === 'string' && isFeaturedType(req.body.featuredType)
@@ -705,9 +749,13 @@ export const duplicateArticle = async (req: Request, res: Response): Promise<voi
         excerpt: articleFound.excerpt,
         content: articleFound.content,
         featuredImageUrl: articleFound.featuredImageUrl,
+        featuredImageCaption: articleFound.featuredImageCaption,
+        isVideoGallery: articleFound.isVideoGallery,
+        videoUrl: articleFound.videoUrl,
         tags: articleFound.tags ?? [],
         status: 'draft',
         isFeatured: false,
+        allowComments: articleFound.allowComments ?? true,
         featuredType: 'none',
         featuredAt: null,
         authorId: articleFound.authorId,

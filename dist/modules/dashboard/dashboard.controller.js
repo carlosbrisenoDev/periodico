@@ -1,7 +1,8 @@
 import { articlesCollection } from './dashboard.model.js';
 import { authorsCollection } from '../author/author.model.js';
+import { auditLogsCollection } from '../audit/audit.model.js';
 export const getSummary = async (_req, res) => {
-    const [draft, published, scheduled, latestArticles] = await Promise.all([
+    const [draft, published, scheduled, latestArticles, recentAuditLogs] = await Promise.all([
         articlesCollection().countDocuments({ status: 'draft' }),
         articlesCollection().countDocuments({ status: 'published' }),
         articlesCollection().countDocuments({ status: 'scheduled' }),
@@ -9,11 +10,16 @@ export const getSummary = async (_req, res) => {
             .find({}).project({ title: 1, slug: 1, status: 1, createdAt: 1, deletedAt: 1, authorId: 1 })
             .sort({ createdAt: -1 })
             .limit(10)
+            .toArray(),
+        auditLogsCollection()
+            .find({})
+            .sort({ createdAt: -1 })
+            .limit(10)
             .toArray()
     ]);
-    const authorIds = [...new Set(latestArticles.map(a => a.authorId).filter(Boolean))];
+    const authorIds = [...new Set(latestArticles.map((a) => a.authorId).filter(Boolean))];
     const authors = await authorsCollection().find({ _id: { $in: authorIds } }).toArray();
-    const authorMap = new Map(authors.map(a => [a._id.toString(), a.name]));
+    const authorMap = new Map(authors.map((a) => [a._id.toString(), a.name]));
     res.status(200).json({
         counts: { draft, published, scheduled },
         latestArticles: latestArticles.map((article) => ({
@@ -23,6 +29,14 @@ export const getSummary = async (_req, res) => {
             status: article.deletedAt ? 'deleted' : article.status,
             createdAt: article.createdAt,
             authorName: article.authorId ? authorMap.get(article.authorId.toString()) ?? 'Redacción' : 'Redacción'
+        })),
+        recentAuditLogs: recentAuditLogs.map((log) => ({
+            id: log._id.toString(),
+            action: log.action,
+            targetType: log.targetType,
+            actorEmail: log.actorEmail,
+            details: log.details,
+            createdAt: log.createdAt
         }))
     });
 };

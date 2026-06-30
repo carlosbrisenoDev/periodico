@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { ObjectId } from 'mongodb';
+import sharp from 'sharp';
 import { imagesCollection } from './image.model.js';
 
 const readParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] : value ?? '');
@@ -12,21 +13,36 @@ export const uploadImage = async (req: Request, res: Response): Promise<void> =>
     return;
   }
 
-  const url = `/uploads/featured/${req.file.filename}`;
-  const result = await imagesCollection().insertOne({
-    _id: new ObjectId(),
-    filename: req.file.filename,
-    url,
-    mimeType: req.file.mimetype,
-    size: req.file.size,
-    createdAt: new Date()
-  });
+  try {
+    const originalPath = req.file.path;
+    const parsedPath = path.parse(originalPath);
+    const webpFilename = `${parsedPath.name}.webp`;
+    const webpPath = path.join(parsedPath.dir, webpFilename);
 
-  res.status(201).json({
-    id: result.insertedId.toString(),
-    filename: req.file.filename,
-    url
-  });
+    const sharpInfo = await sharp(originalPath)
+      .webp({ quality: 80 })
+      .toFile(webpPath);
+
+    await unlink(originalPath);
+
+    const url = `/uploads/featured/${webpFilename}`;
+    const result = await imagesCollection().insertOne({
+      _id: new ObjectId(),
+      filename: webpFilename,
+      url,
+      mimeType: 'image/webp',
+      size: sharpInfo.size,
+      createdAt: new Date()
+    });
+
+    res.status(201).json({
+      id: result.insertedId.toString(),
+      filename: webpFilename,
+      url
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error processing image' });
+  }
 };
 
 export const listRecentImages = async (req: Request, res: Response): Promise<void> => {

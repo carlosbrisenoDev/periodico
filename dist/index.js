@@ -30,13 +30,31 @@ const sweepExpiredHeroArticles = async () => {
         process.stderr.write(`Featured sweep error: ${message}\n`);
     }
 };
+const sweepScheduledArticles = async () => {
+    try {
+        const now = new Date();
+        await articlesCollection().updateMany({ status: 'scheduled', scheduledAt: { $lte: now } }, {
+            $set: {
+                status: 'published',
+                publishedAt: now,
+                updatedAt: now,
+            },
+        });
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(`Scheduled sweep error: ${message}\n`);
+    }
+};
 const bootstrap = async () => {
     await connectDatabase();
     await ensureDatabaseIndexes();
     await ensureDefaultAdmin();
     await sweepExpiredHeroArticles();
+    await sweepScheduledArticles();
     setInterval(() => {
         void sweepExpiredHeroArticles();
+        void sweepScheduledArticles();
     }, FEATURED_SWEEP_INTERVAL_MS);
     app.listen(env.PORT, () => {
         process.stdout.write(`Server running on port ${env.PORT}\n`);

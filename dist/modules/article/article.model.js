@@ -27,6 +27,20 @@ const articleSchema = new Schema({
         required: false,
         default: null
     },
+    featuredImageCaption: {
+        type: String,
+        required: false,
+        default: null
+    },
+    isVideoGallery: {
+        type: Boolean,
+        default: false
+    },
+    videoUrl: {
+        type: String,
+        required: false,
+        default: null
+    },
     tags: {
         type: [String],
         default: []
@@ -42,6 +56,10 @@ const articleSchema = new Schema({
         type: Boolean,
         default: false,
         index: true
+    },
+    allowComments: {
+        type: Boolean,
+        default: true
     },
     featuredType: {
         type: String,

@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import {env} from '../config.js';
 
 export type JwtPayload = {
-    userId: string; email: string; role: 'admin' | 'editor';
+    userId: string; email: string; role: 'admin' | 'editor' | 'journalist';
 };
 
 export type JwtSubscriberPayload = {
