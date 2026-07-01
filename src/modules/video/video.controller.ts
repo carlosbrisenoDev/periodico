@@ -8,7 +8,8 @@ const readParam = (value: string | string[] | undefined): string => (Array.isArr
 
 export const addVideo = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { url, title } = req.body;
+    const { url } = req.body;
+    let title = req.body.title || '';
     
     if (!url) {
       res.status(400).json({ message: 'URL is required' });
@@ -35,12 +36,28 @@ export const addVideo = async (req: AuthenticatedRequest, res: Response): Promis
       videoExternalId = url;
     }
 
+    // Attempt to fetch title from YouTube if missing
+    if (!title && platform === 'youtube' && videoExternalId) {
+      try {
+        const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoExternalId}&format=json`;
+        const res = await fetch(oembedUrl);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.title) {
+            title = data.title;
+          }
+        }
+      } catch (err) {
+        // silently fallback if fetch fails
+      }
+    }
+
     const result = await videosCollection().insertOne({
       _id: new ObjectId(),
       url,
       platform,
       videoExternalId: videoExternalId || url,
-      title: title || '',
+      title,
       addedBy: req.user ? new ObjectId(req.user.userId) : undefined,
       createdAt: new Date(),
       updatedAt: new Date()
