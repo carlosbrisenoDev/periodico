@@ -87,6 +87,8 @@ export const getCategoryById = async (req: Request, res: Response): Promise<void
     slug: category.slug,
     description: category.description,
     order: category.order ?? 0,
+    color: category.color ?? null,
+    template: category.template ?? 'default',
     createdAt: category.createdAt,
     updatedAt: category.updatedAt
   });
@@ -111,6 +113,8 @@ export const getCategoryBySlug = async (req: Request, res: Response): Promise<vo
     slug: category.slug,
     description: category.description,
     order: category.order ?? 0,
+    color: category.color ?? null,
+    template: category.template ?? 'default',
     createdAt: category.createdAt,
     updatedAt: category.updatedAt
   });
