@@ -258,14 +258,9 @@ export const getCategories = async (_req: Request, res: Response): Promise<void>
     ])
     .toArray();
 
-  if (!categoriesSummary.length) {
-    res.status(200).json([]);
-    return;
-  }
-
-  // Fetch categories sorted by their manual order field
+  // Fetch all categories sorted by their manual order field
   const categories = await publicCategoriesCollection()
-    .find({ _id: { $in: categoriesSummary.map((category) => category._id) } })
+    .find({})
     .sort({ order: 1, createdAt: 1 })
     .toArray();
 
@@ -274,8 +269,7 @@ export const getCategories = async (_req: Request, res: Response): Promise<void>
   res.status(200).json(
     categories
       .map((category) => {
-        const total = articleCountById.get(category._id.toString());
-        if (total === undefined) return null;
+        const total = articleCountById.get(category._id.toString()) || 0;
 
         return {
           id: category._id.toString(),
@@ -284,6 +278,7 @@ export const getCategories = async (_req: Request, res: Response): Promise<void>
           description: category.description ?? null,
           order: category.order ?? 0,
           color: (category as any).color ?? null,
+          template: (category as any).template ?? 'default',
           articleCount: total
         };
       })

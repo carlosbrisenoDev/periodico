@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { auditLogsCollection } from './audit.model.js';
-export const logAudit = async (action, entityType, entityId, userId, details, ipAddress) => {
+export const logAudit = async (action, entityType, entityId, userId, details, options) => {
     try {
         const now = new Date();
         await auditLogsCollection().insertOne({
@@ -8,19 +8,22 @@ export const logAudit = async (action, entityType, entityId, userId, details, ip
             action,
             entityType,
             entityId,
-            userId: userId ? new ObjectId(userId) : undefined,
+            userId: userId && ObjectId.isValid(userId) ? new ObjectId(userId) : undefined,
+            userName: options?.userName,
+            userEmail: options?.userEmail,
             details,
-            ipAddress,
+            ipAddress: options?.ipAddress,
             createdAt: now,
             updatedAt: now
         });
     }
     catch (error) {
+        // Audit failures should never break the main operation
         console.error('Failed to write audit log', error);
     }
 };
 export const listAuditLogs = async (req, res) => {
-    const { action, entityType, userId, page = 1, limit = 20 } = req.query;
+    const { action, entityType, userId, page = 1, limit = 50 } = req.query;
     const filter = {};
     if (action)
         filter.action = action;
@@ -43,6 +46,8 @@ export const listAuditLogs = async (req, res) => {
             entityType: l.entityType,
             entityId: l.entityId,
             userId: l.userId?.toString(),
+            userName: l.userName ?? null,
+            userEmail: l.userEmail ?? null,
             details: l.details,
             ipAddress: l.ipAddress,
             createdAt: l.createdAt

@@ -5,7 +5,8 @@ const categorySchema = new Schema({
     slug: { type: String, required: true, trim: true, lowercase: true, unique: true, index: true },
     description: { type: String, required: false },
     order: { type: Number, default: 0 },
-    color: { type: String, required: false, trim: true }
+    color: { type: String, required: false, trim: true },
+    template: { type: String, required: false, trim: true, default: 'default' }
 }, {
     collection: 'categories',
     versionKey: false,

@@ -46,6 +46,7 @@ export const createCollectionAdapter = (model) => ({
     findOneAndUpdate: async (filter, update, options = { returnDocument: 'after' }) => (await model
         .findOneAndUpdate(filter, update, {
         new: options.returnDocument === 'after',
+        upsert: options.upsert,
         lean: true
     })
         .exec()),

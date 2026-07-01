@@ -6,7 +6,7 @@ import { ensureDefaultAdmin } from './modules/auth/auth.model.js';
 import { articlesCollection } from './modules/article/article.model.js';
 //import { startNewsletterJob } from './modules/newsletter/newsletter.job.js';
 import express from "express";
-const FEATURED_SWEEP_INTERVAL_MS = 60 * 60 * 1000;
+const FEATURED_SWEEP_INTERVAL_MS = 60 * 1000; // run every 1 minute
 const sweepExpiredHeroArticles = async () => {
     try {
         const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -33,13 +33,20 @@ const sweepExpiredHeroArticles = async () => {
 const sweepScheduledArticles = async () => {
     try {
         const now = new Date();
-        await articlesCollection().updateMany({ status: 'scheduled', scheduledAt: { $lte: now } }, {
-            $set: {
-                status: 'published',
-                publishedAt: now,
-                updatedAt: now,
+        // Use aggregation pipeline to preserve the original scheduledAt as publishedAt
+        const result = await articlesCollection().updateMany({ status: 'scheduled', scheduledAt: { $lte: now }, deletedAt: null }, [
+            {
+                $set: {
+                    status: 'published',
+                    publishedAt: { $ifNull: ['$scheduledAt', now] },
+                    scheduledAt: null,
+                    updatedAt: now,
+                },
             },
-        });
+        ]);
+        if (result.modifiedCount > 0) {
+            process.stdout.write(`[scheduler] Published ${result.modifiedCount} scheduled article(s)\n`);
+        }
     }
     catch (error) {
         const message = error instanceof Error ? error.message : String(error);
