@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import { commentsCollection } from './comment.model.js';
+import { logAudit } from '../audit/audit.controller.js';
+import { settingsCollection } from '../settings/settings.model.js';
+
 
 const readParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] : value ?? '');
 
@@ -10,6 +13,17 @@ export const createComment = async (req: Request, res: Response): Promise<void> 
   if (!ObjectId.isValid(articleId)) {
     res.status(400).json({ message: 'Invalid article id' });
     return;
+  }
+
+  const settings = await settingsCollection().findOne({ _id: 'global' });
+  if (settings && settings.commentBlocklist && settings.commentBlocklist.length > 0) {
+    const lowerContent = String(content).toLowerCase();
+    const hasBlockedWord = settings.commentBlocklist.some(word => lowerContent.includes(word.toLowerCase()));
+    
+    if (hasBlockedWord) {
+      res.status(400).json({ message: 'El comentario contiene lenguaje no permitido.' });
+      return;
+    }
   }
 
   const now = new Date();
@@ -105,6 +119,8 @@ export const updateCommentStatus = async (req: Request, res: Response): Promise<
     createdAt: result.createdAt,
     updatedAt: result.updatedAt
   });
+  const authReqUpd = req as any;
+  void logAudit('update', 'comment', result._id.toString(), authReqUpd.user?.userId, `Status changed to "${status}"`, { userName: authReqUpd.user?.name, userEmail: authReqUpd.user?.email, ipAddress: req.ip });
 };
 
 export const deleteComment = async (req: Request, res: Response): Promise<void> => {
@@ -123,4 +139,6 @@ export const deleteComment = async (req: Request, res: Response): Promise<void> 
   }
 
   res.status(200).json({ message: 'Comment deleted' });
+  const authReqDel = req as any;
+  void logAudit('delete', 'comment', id, authReqDel.user?.userId, `Deleted comment`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
 };

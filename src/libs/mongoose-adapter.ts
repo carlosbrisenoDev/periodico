@@ -51,11 +51,12 @@ export const createCollectionAdapter = <T>(model: Model<T>) => ({
   findOneAndUpdate: async (
     filter: any,
     update: any,
-    options: { returnDocument?: 'before' | 'after' } = { returnDocument: 'after' }
+    options: { returnDocument?: 'before' | 'after', upsert?: boolean } = { returnDocument: 'after' }
   ): Promise<T | null> =>
     (await model
       .findOneAndUpdate(filter, update, {
         new: options.returnDocument === 'after',
+        upsert: options.upsert,
         lean: true
       })
       .exec()) as T | null,

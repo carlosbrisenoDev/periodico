@@ -3,6 +3,8 @@ import {Filter, MongoServerError, ObjectId} from 'mongodb';
 import {authorsCollection} from '../author/author.model.js';
 import {categoriesCollection} from '../category/category.model.js';
 import {ArticleDoc, ArticleFeaturedType, articlesCollection} from './article.model.js';
+import {logAudit} from '../audit/audit.controller.js';
+
 
 const FEATURED_TYPES = new Set<ArticleFeaturedType>(['none', 'hero', 'headline', 'category_hero', 'breaking']);
 const FEATURED_HERO_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -373,6 +375,8 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
 
 
         await articlesCollection().insertOne(article);
+        const authReq2 = req as any;
+        void logAudit('create', 'article', article._id.toString(), authReq2.user?.userId, `Created: "${article.title}" (${status})`, { userName: authReq2.user?.name, userEmail: authReq2.user?.email, ipAddress: req.ip });
         res.status(201).json(toArticleResponse(article));
     } catch (error) {
         if (error instanceof MongoServerError && error.code === 11000) {
@@ -382,6 +386,7 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
         throw error;
     }
 };
+
 
 export const listArticles = async (_req: Request, res: Response): Promise<void> => {
     await syncScheduledArticles();
@@ -799,8 +804,11 @@ export const deleteArticle = async (req: Request, res: Response): Promise<void> 
         {returnDocument: 'after'}
     );
 
+    const authReqDel = req as any;
+    void logAudit('delete', 'article', articleId.toString(), authReqDel.user?.userId, `Moved to trash: "${articleFound.title}"`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
     res.status(200).json({message: 'Article moved to trash'});
 };
+
 
 export const listDeletedArticles = async (_req: Request, res: Response): Promise<void> => {
     const articles = await articlesCollection()
@@ -843,8 +851,11 @@ export const restoreArticle = async (req: Request, res: Response): Promise<void>
         return;
     }
 
+    const authReqRes = req as any;
+    void logAudit('restore', 'article', articleId.toString(), authReqRes.user?.userId, `Restored: "${updatedArticle.title}"`, { userName: authReqRes.user?.name, userEmail: authReqRes.user?.email, ipAddress: req.ip });
     res.status(200).json(toArticleResponse(updatedArticle));
 };
+
 
 export const purgeArticle = async (req: Request, res: Response): Promise<void> => {
     const articleId = parseObjectId(readParam(req.params.id));
@@ -865,8 +876,11 @@ export const purgeArticle = async (req: Request, res: Response): Promise<void> =
         return;
     }
 
+    const authReqPurge = req as any;
+    void logAudit('delete', 'article', articleId.toString(), authReqPurge.user?.userId, `Permanently deleted: "${articleFound.title}"`, { userName: authReqPurge.user?.name, userEmail: authReqPurge.user?.email, ipAddress: req.ip });
     res.status(200).json({message: 'Article deleted permanently'});
 };
+
 
 export const updateArticleStatus = async (req: Request, res: Response): Promise<void> => {
     const articleId = parseObjectId(readParam(req.params.id));
@@ -931,5 +945,8 @@ export const updateArticleStatus = async (req: Request, res: Response): Promise<
         return;
     }
 
+    const authReqStatus = req as any;
+    void logAudit('update', 'article', articleId.toString(), authReqStatus.user?.userId, `Status changed to "${status}": "${updatedArticle.title}"`, { userName: authReqStatus.user?.name, userEmail: authReqStatus.user?.email, ipAddress: req.ip });
     res.status(200).json(toArticleResponse(updatedArticle));
 };
+

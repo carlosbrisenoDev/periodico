@@ -1,7 +1,7 @@
 import mongoose, { Schema, Types } from 'mongoose';
 import { createCollectionAdapter } from '../../libs/mongoose-adapter.js';
 
-export type AuditAction = 'create' | 'update' | 'delete' | 'login' | 'other';
+export type AuditAction = 'create' | 'update' | 'delete' | 'restore' | 'publish' | 'login' | 'other';
 
 export type AuditLogDoc = {
   _id: Types.ObjectId;
@@ -9,6 +9,8 @@ export type AuditLogDoc = {
   entityType: string;
   entityId?: string;
   userId?: Types.ObjectId;
+  userName?: string;
+  userEmail?: string;
   details?: string;
   ipAddress?: string;
   createdAt: Date;
@@ -17,10 +19,12 @@ export type AuditLogDoc = {
 
 const auditLogSchema = new Schema<AuditLogDoc>(
   {
-    action: { type: String, enum: ['create', 'update', 'delete', 'login', 'other'], required: true, index: true },
+    action: { type: String, enum: ['create', 'update', 'delete', 'restore', 'publish', 'login', 'other'], required: true, index: true },
     entityType: { type: String, required: true, index: true },
     entityId: { type: String, required: false, index: true },
-    userId: { type: Schema.Types.ObjectId, required: false, ref: 'Subscriber', index: true },
+    userId: { type: Schema.Types.ObjectId, required: false, index: true },
+    userName: { type: String, required: false },
+    userEmail: { type: String, required: false },
     details: { type: String, required: false },
     ipAddress: { type: String, required: false },
   },

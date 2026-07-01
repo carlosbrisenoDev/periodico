@@ -37,7 +37,9 @@ mkdirSync(uploadDirectory, { recursive: true });
 
 const MIME_EXTENSION_MAP: Record<string, string> = {
   'image/jpeg': '.jpg',
-  'image/png': '.png'
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/avif': '.avif'
 };
 
 const sanitizeBaseName = (value: string): string => {
@@ -81,7 +83,7 @@ export const uploadFeaturedImage = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowedMimeTypes = ['image/jpeg', 'image/png'];
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
     cb(null, allowedMimeTypes.includes(file.mimetype));
   }
 });

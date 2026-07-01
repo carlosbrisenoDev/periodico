@@ -18,7 +18,10 @@ import reportRoutes from './modules/report/index.js';
 import commentRoutes from './modules/comments/index.js';
 import citizenReportRoutes from './modules/citizen_reports/index.js';
 import auditRoutes from './modules/audit/index.js';
+import videoRoutes from './modules/video/index.js';
+import { settingsRoutes } from './modules/settings/index.js';
 import { corsMiddleware } from './middlewares/cors.js';
+import { validateToken } from './middlewares/validateToken.js';
 
 export const app = express();
 
@@ -47,6 +50,8 @@ app.use('/api/v1', reportRoutes);
 app.use('/api/v1/comments', commentRoutes);
 app.use('/api/v1/citizen-reports', citizenReportRoutes);
 app.use('/api/v1/audit', auditRoutes);
+app.use('/api/v1/videos', validateToken, videoRoutes);
+app.use('/api/v1/settings', validateToken, settingsRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Not found' });

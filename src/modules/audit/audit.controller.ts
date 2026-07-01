@@ -8,7 +8,7 @@ export const logAudit = async (
   entityId?: string,
   userId?: string,
   details?: string,
-  ipAddress?: string
+  options?: { userName?: string; userEmail?: string; ipAddress?: string }
 ): Promise<void> => {
   try {
     const now = new Date();
@@ -17,34 +17,37 @@ export const logAudit = async (
       action,
       entityType,
       entityId,
-      userId: userId ? new ObjectId(userId) : undefined,
+      userId: userId && ObjectId.isValid(userId) ? new ObjectId(userId) : undefined,
+      userName: options?.userName,
+      userEmail: options?.userEmail,
       details,
-      ipAddress,
+      ipAddress: options?.ipAddress,
       createdAt: now,
       updatedAt: now
     });
   } catch (error) {
+    // Audit failures should never break the main operation
     console.error('Failed to write audit log', error);
   }
 };
 
 export const listAuditLogs = async (req: Request, res: Response): Promise<void> => {
-  const { action, entityType, userId, page = 1, limit = 20 } = req.query;
+  const { action, entityType, userId, page = 1, limit = 50 } = req.query;
   const filter: any = {};
-  
+
   if (action) filter.action = action;
   if (entityType) filter.entityType = entityType;
   if (userId && ObjectId.isValid(userId as string)) filter.userId = new ObjectId(userId as string);
 
   const skip = (Number(page) - 1) * Number(limit);
-  
+
   const logs = await auditLogsCollection()
     .find(filter)
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(Number(limit))
     .toArray();
-    
+
   const total = await auditLogsCollection().countDocuments(filter);
 
   res.status(200).json({
@@ -54,6 +57,8 @@ export const listAuditLogs = async (req: Request, res: Response): Promise<void> 
       entityType: l.entityType,
       entityId: l.entityId,
       userId: l.userId?.toString(),
+      userName: l.userName ?? null,
+      userEmail: l.userEmail ?? null,
       details: l.details,
       ipAddress: l.ipAddress,
       createdAt: l.createdAt

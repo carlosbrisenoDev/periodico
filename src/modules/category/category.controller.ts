@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { MongoServerError, ObjectId } from 'mongodb';
 import { categoriesCollection } from './category.model.js';
+import { logAudit } from '../audit/audit.controller.js';
 
 const readParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] : value ?? '');
 
@@ -13,7 +14,7 @@ const toSlug = (value: string): string =>
     .replace(/(^-|-$)+/g, '');
 
 export const createCategory = async (req: Request, res: Response): Promise<void> => {
-  const { name, slug, description, order } = req.body;
+  const { name, slug, description, order, color, template } = req.body;
   const categorySlug = toSlug(slug ?? name);
   const existingCategory = await categoriesCollection().findOne({ slug: categorySlug });
 
@@ -30,11 +31,15 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
       slug: categorySlug,
       description,
       order: typeof order === 'number' ? order : 0,
+      color: color ?? undefined,
+      template: template ?? 'default',
       createdAt: now,
       updatedAt: now
-    });
+    } as any);
 
-    res.status(201).json({ id: result.insertedId.toString(), name, slug: categorySlug, description, order: typeof order === 'number' ? order : 0 });
+    res.status(201).json({ id: result.insertedId.toString(), name, slug: categorySlug, description, order: typeof order === 'number' ? order : 0, color: color ?? null, template: template ?? 'default' });
+    const authReqCat = req as any;
+    void logAudit('create', 'category', result.insertedId.toString(), authReqCat.user?.userId, `Created category: "${name}"`, { userName: authReqCat.user?.name, userEmail: authReqCat.user?.email, ipAddress: req.ip });
   } catch (error) {
     if (error instanceof MongoServerError && error.code === 11000) {
       res.status(409).json({ message: 'Category slug already exists' });
@@ -43,6 +48,7 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
     throw error;
   }
 };
+
 
 export const listCategories = async (_req: Request, res: Response): Promise<void> => {
   const categories = await categoriesCollection().find({}).sort({ order: 1, createdAt: -1 }).toArray();
@@ -53,11 +59,14 @@ export const listCategories = async (_req: Request, res: Response): Promise<void
       slug: category.slug,
       description: category.description,
       order: category.order ?? 0,
+      color: (category as any).color ?? null,
+      template: (category as any).template ?? 'default',
       createdAt: category.createdAt,
       updatedAt: category.updatedAt
     }))
   );
 };
+
 
 export const getCategoryById = async (req: Request, res: Response): Promise<void> => {
   const id = readParam(req.params.id);
@@ -124,6 +133,12 @@ export const updateCategory = async (req: Request, res: Response): Promise<void>
   if (req.body.order !== undefined) {
     updates.order = req.body.order;
   }
+  if (req.body.color !== undefined) {
+    updates.color = req.body.color;
+  }
+  if (req.body.template !== undefined) {
+    updates.template = req.body.template;
+  }
   if (req.body.slug || req.body.name) {
     updates.slug = toSlug(req.body.slug ?? req.body.name);
   }
@@ -166,9 +181,39 @@ export const updateCategory = async (req: Request, res: Response): Promise<void>
     slug: result.slug,
     description: result.description,
     order: result.order ?? 0,
+    color: (result as any).color ?? null,
+    template: (result as any).template ?? 'default',
     createdAt: result.createdAt,
     updatedAt: result.updatedAt
   });
+  const authReqCatUpd = req as any;
+  void logAudit('update', 'category', result._id.toString(), authReqCatUpd.user?.userId, `Updated category: "${result.name}"`, { userName: authReqCatUpd.user?.name, userEmail: authReqCatUpd.user?.email, ipAddress: req.ip });
+};
+
+
+export const batchUpdateCategoryOrder = async (req: Request, res: Response): Promise<void> => {
+  const { items } = req.body;
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ message: 'items must be a non-empty array' });
+    return;
+  }
+
+  const ops = items
+    .filter((item: any) => typeof item.id === 'string' && ObjectId.isValid(item.id) && typeof item.order === 'number')
+    .map((item: any) =>
+      categoriesCollection().updateOne(
+        { _id: new ObjectId(item.id) },
+        { $set: { order: item.order, updatedAt: new Date() } }
+      )
+    );
+
+  if (ops.length === 0) {
+    res.status(400).json({ message: 'No valid items provided' });
+    return;
+  }
+
+  await Promise.all(ops);
+  res.status(200).json({ message: 'Order updated', count: ops.length });
 };
 
 export const deleteCategory = async (req: Request, res: Response): Promise<void> => {
@@ -184,5 +229,7 @@ export const deleteCategory = async (req: Request, res: Response): Promise<void>
     return;
   }
 
+  const authReqDel = req as any;
+  void logAudit('delete', 'category', id, authReqDel.user?.userId, `Deleted category`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
   res.status(200).json({ message: 'Category deleted' });
 };

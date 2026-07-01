@@ -20,7 +20,8 @@ export const uploadImage = async (req: Request, res: Response): Promise<void> =>
     const webpPath = path.join(parsedPath.dir, webpFilename);
 
     const sharpInfo = await sharp(originalPath)
-      .webp({ quality: 80 })
+      .resize({ width: 1200, withoutEnlargement: true })
+      .webp({ quality: 75 })
       .toFile(webpPath);
 
     await unlink(originalPath);

@@ -254,8 +254,7 @@ export const getCategories = async (_req: Request, res: Response): Promise<void>
     .aggregate<{ _id: ObjectId; total: number }>([
       { $match: isPublishableFilter() },
       { $unwind: '$categoryIds' },
-      { $group: { _id: '$categoryIds', total: { $sum: 1 } } },
-      { $sort: { total: -1 } }
+      { $group: { _id: '$categoryIds', total: { $sum: 1 } } }
     ])
     .toArray();
 
@@ -264,26 +263,28 @@ export const getCategories = async (_req: Request, res: Response): Promise<void>
     return;
   }
 
+  // Fetch categories sorted by their manual order field
   const categories = await publicCategoriesCollection()
     .find({ _id: { $in: categoriesSummary.map((category) => category._id) } })
+    .sort({ order: 1, createdAt: 1 })
     .toArray();
 
-  const categoriesById = new Map(categories.map((category) => [category._id.toString(), category]));
+  const articleCountById = new Map(categoriesSummary.map((item) => [item._id.toString(), item.total]));
 
   res.status(200).json(
-    categoriesSummary
-      .map((item) => {
-        const category = categoriesById.get(item._id.toString());
-        if (!category) {
-          return null;
-        }
+    categories
+      .map((category) => {
+        const total = articleCountById.get(category._id.toString());
+        if (total === undefined) return null;
 
         return {
           id: category._id.toString(),
           name: category.name,
           slug: category.slug,
           description: category.description ?? null,
-          articleCount: item.total
+          order: category.order ?? 0,
+          color: (category as any).color ?? null,
+          articleCount: total
         };
       })
       .filter((category): category is NonNullable<typeof category> => category !== null)
@@ -390,7 +391,10 @@ export const getArticlesByCategorySlug = async (req: Request, res: Response): Pr
     category: {
       id: category._id.toString(),
       name: category.name,
-      slug: category.slug
+      slug: category.slug,
+      order: (category as any).order ?? 0,
+      color: (category as any).color ?? null,
+      template: (category as any).template ?? 'default'
     },
     articles: await Promise.all(articles.map(toPublicArticle))
   });
@@ -551,3 +555,30 @@ export const getSitemap = async (_req: Request, res: Response): Promise<void> =>
     urls
   });
 };
+
+export const getVideos = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const limit = Number(req.query.limit ?? 20);
+    const skip = Number(req.query.skip ?? 0);
+    
+    // We import videosCollection locally to avoid circular dependencies if any,
+    // or we can just require it at the top. Let's do it inline for safety or just import it.
+    const { videosCollection } = await import('../video/video.model.js');
+    
+    const videos = await videosCollection().find({}).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    
+    res.status(200).json(
+      videos.map((v) => ({
+        id: v._id.toString(),
+        url: v.url,
+        platform: v.platform,
+        videoExternalId: v.videoExternalId,
+        title: v.title,
+        createdAt: v.createdAt
+      }))
+    );
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching videos' });
+  }
+};
+
