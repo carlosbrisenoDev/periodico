@@ -50,7 +50,7 @@ app.use('/api/v1', reportRoutes);
 app.use('/api/v1/comments', commentRoutes);
 app.use('/api/v1/citizen-reports', citizenReportRoutes);
 app.use('/api/v1/audit', auditRoutes);
-app.use('/api/v1/videos', validateToken, videoRoutes);
+app.use('/api/v1/video', validateToken, videoRoutes);
 app.use('/api/v1/settings', validateToken, settingsRoutes);
 
 app.use((_req, res) => {
