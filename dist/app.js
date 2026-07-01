@@ -22,7 +22,7 @@ import { settingsRoutes } from './modules/settings/index.js';
 import { corsMiddleware } from './middlewares/cors.js';
 import { validateToken } from './middlewares/validateToken.js';
 export const app = express();
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(corsMiddleware);
 app.use(morgan('dev'));
 app.use(cookieParser());
