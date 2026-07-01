@@ -3,6 +3,7 @@ import mongoose, { Schema, Types } from 'mongoose';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { createCollectionAdapter } from '../../libs/mongoose-adapter.js';
+import { env } from '../../config.js';
 
 export type ImageDoc = {
   _id: Types.ObjectId;
@@ -81,7 +82,7 @@ const storage = multer.diskStorage({
 
 export const uploadFeaturedImage = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: env.MAX_UPLOAD_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
     cb(null, allowedMimeTypes.includes(file.mimetype));

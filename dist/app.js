@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'node:path';
 import authRoutes from './modules/auth/index.js';
+import { env } from './config.js';
 import dashboardRoutes from './modules/dashboard/index.js';
 import authorRoutes from './modules/author/index.js';
 import categoryRoutes from './modules/category/index.js';
@@ -26,7 +27,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(corsMiddleware);
 app.use(morgan('dev'));
 app.use(cookieParser());
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: `${env.MAX_UPLOAD_MB}mb` }));
 app.use('/uploads', express.static(path.resolve('uploads')));
 app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });

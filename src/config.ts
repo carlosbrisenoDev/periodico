@@ -23,6 +23,7 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().optional(),
   NEWSLETTER_ARTICLES_COUNT: z.coerce.number().int().positive().default(4),
   NEWSLETTER_INTERVAL_MS: z.coerce.number().int().positive().default(604800000),
+  MAX_UPLOAD_MB: z.coerce.number().int().positive().default(5),
 });
 
 const parsed = envSchema.safeParse(process.env);
