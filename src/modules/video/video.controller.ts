@@ -18,26 +18,21 @@ export const addVideo = async (req: AuthenticatedRequest, res: Response): Promis
     let platform: 'youtube' | 'twitter' | 'other' = 'other';
     let videoExternalId = '';
 
-    // Simple Youtube extraction
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      platform = 'youtube';
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-      const match = url.match(regExp);
-      if (match && match[2].length === 11) {
-        videoExternalId = match[2];
-      }
-    } else if (url.includes('twitter.com') || url.includes('x.com')) {
-      platform = 'twitter';
-      const regExp = /\/(status|statuses)\/(\d+)/;
-      const match = url.match(regExp);
-      if (match && match[2]) {
-        videoExternalId = match[2];
-      }
-    }
+    // Robust Youtube extraction
+    const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
+    // Robust Twitter/X extraction
+    const twMatch = url.match(/(?:twitter\.com|x\.com)\/\w+\/status(?:es)?\/(\d+)/i);
 
-    if (platform !== 'other' && !videoExternalId) {
-       res.status(400).json({ message: 'Could not extract valid video ID from URL.' });
-       return;
+    if (ytMatch && ytMatch[1]) {
+      platform = 'youtube';
+      videoExternalId = ytMatch[1];
+    } else if (twMatch && twMatch[1]) {
+      platform = 'twitter';
+      videoExternalId = twMatch[1];
+    } else {
+      // If we cannot extract ID but it looks like a url, we just save it as other
+      platform = 'other';
+      videoExternalId = url;
     }
 
     const result = await videosCollection().insertOne({
