@@ -72,7 +72,7 @@ export const listComments = async (req: Request, res: Response): Promise<void> =
   const total = await commentsCollection().countDocuments(filter);
 
   const articleIds = [...new Set(comments.map(c => c.articleId.toString()))].map(id => new ObjectId(id));
-  const articles = await articlesCollection().find({ _id: { $in: articleIds } }, { projection: { title: 1 } }).toArray();
+  const articles = await articlesCollection().find({ _id: { $in: articleIds } }).project({ title: 1 }).toArray();
   const articleMap = articles.reduce((acc, article) => {
     acc[article._id.toString()] = article.title;
     return acc;

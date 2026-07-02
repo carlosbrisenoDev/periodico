@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 import { commentsCollection } from './comment.model.js';
 import { logAudit } from '../audit/audit.controller.js';
 import { settingsCollection } from '../settings/settings.model.js';
+import { articlesCollection } from '../article/article.model.js';
 const readParam = (value) => (Array.isArray(value) ? value[0] : value ?? '');
 export const createComment = async (req, res) => {
     const { articleId, authorName, authorEmail, content } = req.body;
@@ -55,10 +56,17 @@ export const listComments = async (req, res) => {
         .limit(Number(limit))
         .toArray();
     const total = await commentsCollection().countDocuments(filter);
+    const articleIds = [...new Set(comments.map(c => c.articleId.toString()))].map(id => new ObjectId(id));
+    const articles = await articlesCollection().find({ _id: { $in: articleIds } }).project({ title: 1 }).toArray();
+    const articleMap = articles.reduce((acc, article) => {
+        acc[article._id.toString()] = article.title;
+        return acc;
+    }, {});
     res.status(200).json({
         data: comments.map(c => ({
             id: c._id.toString(),
             articleId: c.articleId.toString(),
+            articleTitle: articleMap[c.articleId.toString()] || 'Artículo Desconocido',
             authorName: c.authorName,
             authorEmail: c.authorEmail,
             content: c.content,
