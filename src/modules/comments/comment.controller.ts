@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import { commentsCollection } from './comment.model.js';
 import { logAudit } from '../audit/audit.controller.js';
 import { settingsCollection } from '../settings/settings.model.js';
+import { articlesCollection } from '../article/article.model.js';
 
 
 const readParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] : value ?? '');
@@ -70,10 +71,18 @@ export const listComments = async (req: Request, res: Response): Promise<void> =
     
   const total = await commentsCollection().countDocuments(filter);
 
+  const articleIds = [...new Set(comments.map(c => c.articleId.toString()))].map(id => new ObjectId(id));
+  const articles = await articlesCollection().find({ _id: { $in: articleIds } }, { projection: { title: 1 } }).toArray();
+  const articleMap = articles.reduce((acc, article) => {
+    acc[article._id.toString()] = article.title;
+    return acc;
+  }, {} as Record<string, string>);
+
   res.status(200).json({
     data: comments.map(c => ({
       id: c._id.toString(),
       articleId: c.articleId.toString(),
+      articleTitle: articleMap[c.articleId.toString()] || 'Artículo Desconocido',
       authorName: c.authorName,
       authorEmail: c.authorEmail,
       content: c.content,
@@ -120,7 +129,7 @@ export const updateCommentStatus = async (req: Request, res: Response): Promise<
     updatedAt: result.updatedAt
   });
   const authReqUpd = req as any;
-  void logAudit('update', 'comment', result._id.toString(), authReqUpd.user?.userId, `Status changed to "${status}"`, { userName: authReqUpd.user?.name, userEmail: authReqUpd.user?.email, ipAddress: req.ip });
+  void logAudit('update', 'comment', result._id.toString(), authReqUpd.user?.userId, `Estado cambiado a "${status}"`, { userName: authReqUpd.user?.name, userEmail: authReqUpd.user?.email, ipAddress: req.ip });
 };
 
 export const deleteComment = async (req: Request, res: Response): Promise<void> => {
@@ -140,5 +149,5 @@ export const deleteComment = async (req: Request, res: Response): Promise<void> 
 
   res.status(200).json({ message: 'Comment deleted' });
   const authReqDel = req as any;
-  void logAudit('delete', 'comment', id, authReqDel.user?.userId, `Deleted comment`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
+  void logAudit('delete', 'comment', id, authReqDel.user?.userId, `Comentario eliminado`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
 };

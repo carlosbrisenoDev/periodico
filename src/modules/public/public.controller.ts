@@ -94,6 +94,11 @@ const toPublicArticle = async (article: {
   views: number;
   createdAt: Date;
   updatedAt: Date;
+  featuredImageCaption?: string | null;
+  tags?: string[];
+  isVideoGallery?: boolean;
+  videoUrl?: string | null;
+  allowComments?: boolean;
 }): Promise<Record<string, unknown>> => {
   const [author, categories] = await Promise.all([
     publicAuthorsCollection().findOne({ _id: article.authorId }),
@@ -132,7 +137,12 @@ const toPublicArticle = async (article: {
     scheduledAt: article.scheduledAt,
     views: article.views,
     createdAt: article.createdAt,
-    updatedAt: article.updatedAt
+    updatedAt: article.updatedAt,
+    featuredImageCaption: article.featuredImageCaption ?? null,
+    tags: article.tags ?? [],
+    isVideoGallery: article.isVideoGallery ?? false,
+    videoUrl: article.videoUrl ?? null,
+    allowComments: article.allowComments ?? true
   };
 };
 

@@ -39,7 +39,7 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
 
     res.status(201).json({ id: result.insertedId.toString(), name, slug: categorySlug, description, order: typeof order === 'number' ? order : 0, color: color ?? null, template: template ?? 'default' });
     const authReqCat = req as any;
-    void logAudit('create', 'category', result.insertedId.toString(), authReqCat.user?.userId, `Created category: "${name}"`, { userName: authReqCat.user?.name, userEmail: authReqCat.user?.email, ipAddress: req.ip });
+    void logAudit('create', 'category', result.insertedId.toString(), authReqCat.user?.userId, `Categoría creada: "${name}"`, { userName: authReqCat.user?.name, userEmail: authReqCat.user?.email, ipAddress: req.ip });
   } catch (error) {
     if (error instanceof MongoServerError && error.code === 11000) {
       res.status(409).json({ message: 'Category slug already exists' });
@@ -191,7 +191,7 @@ export const updateCategory = async (req: Request, res: Response): Promise<void>
     updatedAt: result.updatedAt
   });
   const authReqCatUpd = req as any;
-  void logAudit('update', 'category', result._id.toString(), authReqCatUpd.user?.userId, `Updated category: "${result.name}"`, { userName: authReqCatUpd.user?.name, userEmail: authReqCatUpd.user?.email, ipAddress: req.ip });
+  void logAudit('update', 'category', result._id.toString(), authReqCatUpd.user?.userId, `Categoría actualizada: "${result.name}"`, { userName: authReqCatUpd.user?.name, userEmail: authReqCatUpd.user?.email, ipAddress: req.ip });
 };
 
 
@@ -234,6 +234,6 @@ export const deleteCategory = async (req: Request, res: Response): Promise<void>
   }
 
   const authReqDel = req as any;
-  void logAudit('delete', 'category', id, authReqDel.user?.userId, `Deleted category`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
+  void logAudit('delete', 'category', id, authReqDel.user?.userId, `Categoría eliminada`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
   res.status(200).json({ message: 'Category deleted' });
 };

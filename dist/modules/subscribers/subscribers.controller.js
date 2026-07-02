@@ -41,6 +41,12 @@ export const register = async (req, res) => {
         });
         // Fire-and-forget welcome email (don't block the response)
         void sendWelcomeEmail(subscriber.email, subscriber.username);
+        const token = signSubscriberToken({
+            subscriberId: subscriber._id.toString(),
+            email: subscriber.email,
+            username: subscriber.username
+        });
+        res.cookie(env.SUBSCRIBER_COOKIE_NAME, token, cookieConfig);
         res.status(201).json({
             message: 'Subscriber created',
             subscriber: mapSubscriberResponse(subscriber)

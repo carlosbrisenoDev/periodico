@@ -96,7 +96,7 @@ export const updateCommentStatus = async (req, res) => {
         updatedAt: result.updatedAt
     });
     const authReqUpd = req;
-    void logAudit('update', 'comment', result._id.toString(), authReqUpd.user?.userId, `Status changed to "${status}"`, { userName: authReqUpd.user?.name, userEmail: authReqUpd.user?.email, ipAddress: req.ip });
+    void logAudit('update', 'comment', result._id.toString(), authReqUpd.user?.userId, `Estado cambiado a "${status}"`, { userName: authReqUpd.user?.name, userEmail: authReqUpd.user?.email, ipAddress: req.ip });
 };
 export const deleteComment = async (req, res) => {
     const id = readParam(req.params.id);
@@ -111,5 +111,5 @@ export const deleteComment = async (req, res) => {
     }
     res.status(200).json({ message: 'Comment deleted' });
     const authReqDel = req;
-    void logAudit('delete', 'comment', id, authReqDel.user?.userId, `Deleted comment`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
+    void logAudit('delete', 'comment', id, authReqDel.user?.userId, `Comentario eliminado`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
 };

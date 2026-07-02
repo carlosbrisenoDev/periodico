@@ -376,7 +376,7 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
 
         await articlesCollection().insertOne(article);
         const authReq2 = req as any;
-        void logAudit('create', 'article', article._id.toString(), authReq2.user?.userId, `Created: "${article.title}" (${status})`, { userName: authReq2.user?.name, userEmail: authReq2.user?.email, ipAddress: req.ip });
+        void logAudit('create', 'article', article._id.toString(), authReq2.user?.userId, `Creado: "${article.title}" (${status})`, { userName: authReq2.user?.name, userEmail: authReq2.user?.email, ipAddress: req.ip });
         res.status(201).json(toArticleResponse(article));
     } catch (error) {
         if (error instanceof MongoServerError && error.code === 11000) {
@@ -805,7 +805,7 @@ export const deleteArticle = async (req: Request, res: Response): Promise<void> 
     );
 
     const authReqDel = req as any;
-    void logAudit('delete', 'article', articleId.toString(), authReqDel.user?.userId, `Moved to trash: "${articleFound.title}"`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
+    void logAudit('delete', 'article', articleId.toString(), authReqDel.user?.userId, `Movido a la papelera: "${articleFound.title}"`, { userName: authReqDel.user?.name, userEmail: authReqDel.user?.email, ipAddress: req.ip });
     res.status(200).json({message: 'Article moved to trash'});
 };
 
@@ -852,7 +852,7 @@ export const restoreArticle = async (req: Request, res: Response): Promise<void>
     }
 
     const authReqRes = req as any;
-    void logAudit('restore', 'article', articleId.toString(), authReqRes.user?.userId, `Restored: "${updatedArticle.title}"`, { userName: authReqRes.user?.name, userEmail: authReqRes.user?.email, ipAddress: req.ip });
+    void logAudit('restore', 'article', articleId.toString(), authReqRes.user?.userId, `Restaurado: "${updatedArticle.title}"`, { userName: authReqRes.user?.name, userEmail: authReqRes.user?.email, ipAddress: req.ip });
     res.status(200).json(toArticleResponse(updatedArticle));
 };
 
@@ -877,7 +877,7 @@ export const purgeArticle = async (req: Request, res: Response): Promise<void> =
     }
 
     const authReqPurge = req as any;
-    void logAudit('delete', 'article', articleId.toString(), authReqPurge.user?.userId, `Permanently deleted: "${articleFound.title}"`, { userName: authReqPurge.user?.name, userEmail: authReqPurge.user?.email, ipAddress: req.ip });
+    void logAudit('delete', 'article', articleId.toString(), authReqPurge.user?.userId, `Eliminado permanentemente: "${articleFound.title}"`, { userName: authReqPurge.user?.name, userEmail: authReqPurge.user?.email, ipAddress: req.ip });
     res.status(200).json({message: 'Article deleted permanently'});
 };
 
@@ -946,7 +946,7 @@ export const updateArticleStatus = async (req: Request, res: Response): Promise<
     }
 
     const authReqStatus = req as any;
-    void logAudit('update', 'article', articleId.toString(), authReqStatus.user?.userId, `Status changed to "${status}": "${updatedArticle.title}"`, { userName: authReqStatus.user?.name, userEmail: authReqStatus.user?.email, ipAddress: req.ip });
+    void logAudit('update', 'article', articleId.toString(), authReqStatus.user?.userId, `Estado cambiado a "${status}": "${updatedArticle.title}"`, { userName: authReqStatus.user?.name, userEmail: authReqStatus.user?.email, ipAddress: req.ip });
     res.status(200).json(toArticleResponse(updatedArticle));
 };
 
