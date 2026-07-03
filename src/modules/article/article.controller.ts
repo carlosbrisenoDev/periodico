@@ -3,7 +3,7 @@ import {Filter, MongoServerError, ObjectId} from 'mongodb';
 import {authorsCollection} from '../author/author.model.js';
 import {categoriesCollection} from '../category/category.model.js';
 import {ArticleDoc, ArticleFeaturedType, articlesCollection} from './article.model.js';
-import {logAudit} from '../audit/audit.controller.js';
+import {logAudit} from '../audit/index.js';
 
 
 const FEATURED_TYPES = new Set<ArticleFeaturedType>(['none', 'hero', 'headline', 'category_hero', 'breaking']);

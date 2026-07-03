@@ -1,8 +1,7 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../../middlewares/validateToken.js';
 import { articlesCollection } from './dashboard.model.js';
-import { authorsCollection } from '../author/author.model.js';
-import { auditLogsCollection } from '../audit/audit.model.js';
+import { auditLogsCollection } from '../audit/index.js';
 
 export const getSummary = async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
   const [draft, published, scheduled, recentAuditLogs] = await Promise.all([

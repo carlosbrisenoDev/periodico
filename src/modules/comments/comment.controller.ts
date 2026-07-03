@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import { commentsCollection } from './comment.model.js';
-import { logAudit } from '../audit/audit.controller.js';
-import { settingsCollection } from '../settings/settings.model.js';
+import { logAudit } from '../audit/index.js';
+import { settingsCollection } from '../settings/index.js';
 import { articlesCollection } from '../article/article.model.js';
 
 

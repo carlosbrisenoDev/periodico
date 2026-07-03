@@ -16,7 +16,7 @@ import {
   searchArticles,
   getVideos
 } from './public.controller.js';
-import { getPublicSettings } from '../settings/settings.controller.js';
+import { getPublicSettings } from '../settings/index.js';
 import {
   publicArchiveSchema,
   publicArticleIdSchema,

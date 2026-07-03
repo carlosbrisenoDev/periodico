@@ -97,7 +97,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  if (subscriber.active === false || subscriber.status !== 'active') {
+  if (!subscriber.active || subscriber.status !== 'active') {
     res.status(403).json({ message: 'Subscriber is inactive' });
     return;
   }
@@ -132,7 +132,7 @@ export const me = async (req: AuthenticatedRequest, res: Response): Promise<void
     return;
   }
 
-  if (subscriber.active === false || subscriber.status === 'suspended') {
+  if (!subscriber.active || subscriber.status === 'suspended') {
     res.status(403).json({ message: 'Subscriber is inactive' });
     return;
   }

@@ -50,7 +50,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  if (user.active === false) {
+  if (!user.active) {
     res.status(403).json({ message: 'User is inactive' });
     return;
   }

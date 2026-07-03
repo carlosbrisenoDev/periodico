@@ -9,7 +9,6 @@ import {
 } from './public.model.js';
 import { env } from '../../config.js';
 import { verifyAuthToken } from '../../libs/jwt.js';
-import { id } from 'zod/locales';
 
 const PUBLIC_API_BASE_PATH = '/api/v1/public';
 const FEATURED_HERO_MAX_AGE_MS = 24 * 60 * 60 * 1000;

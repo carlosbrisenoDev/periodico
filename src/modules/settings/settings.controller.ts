@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { settingsCollection, GlobalSettings } from './settings.model.js';
-import { logAudit } from '../audit/audit.controller.js';
+import { logAudit } from '../audit/index.js';
 import { AuthenticatedRequest } from '../../middlewares/validateToken.js';
 
 const DEFAULT_SETTINGS: GlobalSettings = {
