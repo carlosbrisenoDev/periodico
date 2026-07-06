@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { videosCollection } from './video.model.js';
-import { logAudit } from '../audit/audit.controller.js';
+import { logAudit } from '../audit/index.js';
 const readParam = (value) => (Array.isArray(value) ? value[0] : value ?? '');
 export const addVideo = async (req, res) => {
     try {

@@ -1,5 +1,5 @@
 import { settingsCollection } from './settings.model.js';
-import { logAudit } from '../audit/audit.controller.js';
+import { logAudit } from '../audit/index.js';
 const DEFAULT_SETTINGS = {
     _id: 'global',
     adsenseEnabled: false,

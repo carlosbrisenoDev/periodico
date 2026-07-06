@@ -2,7 +2,7 @@ import { MongoServerError, ObjectId } from 'mongodb';
 import { authorsCollection } from '../author/author.model.js';
 import { categoriesCollection } from '../category/category.model.js';
 import { articlesCollection } from './article.model.js';
-import { logAudit } from '../audit/audit.controller.js';
+import { logAudit } from '../audit/index.js';
 const FEATURED_TYPES = new Set(['none', 'hero', 'headline', 'category_hero', 'breaking']);
 const FEATURED_HERO_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const isFeaturedType = (value) => typeof value === 'string' && FEATURED_TYPES.has(value);

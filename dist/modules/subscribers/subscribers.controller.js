@@ -72,7 +72,7 @@ export const login = async (req, res) => {
         res.status(401).json({ message: 'Invalid credentials' });
         return;
     }
-    if (subscriber.active === false || subscriber.status !== 'active') {
+    if (!subscriber.active || subscriber.status !== 'active') {
         res.status(403).json({ message: 'Subscriber is inactive' });
         return;
     }
@@ -101,7 +101,7 @@ export const me = async (req, res) => {
         res.status(404).json({ message: 'Subscriber not found' });
         return;
     }
-    if (subscriber.active === false || subscriber.status === 'suspended') {
+    if (!subscriber.active || subscriber.status === 'suspended') {
         res.status(403).json({ message: 'Subscriber is inactive' });
         return;
     }

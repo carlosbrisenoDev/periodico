@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { commentsCollection } from './comment.model.js';
-import { logAudit } from '../audit/audit.controller.js';
-import { settingsCollection } from '../settings/settings.model.js';
+import { logAudit } from '../audit/index.js';
+import { settingsCollection } from '../settings/index.js';
 import { articlesCollection } from '../article/article.model.js';
 const readParam = (value) => (Array.isArray(value) ? value[0] : value ?? '');
 export const createComment = async (req, res) => {

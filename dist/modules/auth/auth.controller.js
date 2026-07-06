@@ -30,7 +30,7 @@ export const login = async (req, res) => {
         res.status(401).json({ message: 'Invalid credentials' });
         return;
     }
-    if (user.active === false) {
+    if (!user.active) {
         res.status(403).json({ message: 'User is inactive' });
         return;
     }

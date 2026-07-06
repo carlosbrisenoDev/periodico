@@ -1,6 +1,6 @@
 import { MongoServerError, ObjectId } from 'mongodb';
 import { categoriesCollection } from './category.model.js';
-import { logAudit } from '../audit/audit.controller.js';
+import { logAudit } from '../audit/index.js';
 const readParam = (value) => (Array.isArray(value) ? value[0] : value ?? '');
 const toSlug = (value) => value
     .toLowerCase()

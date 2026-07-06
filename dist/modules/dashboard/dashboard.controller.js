@@ -1,5 +1,5 @@
 import { articlesCollection } from './dashboard.model.js';
-import { auditLogsCollection } from '../audit/audit.model.js';
+import { auditLogsCollection } from '../audit/index.js';
 export const getSummary = async (_req, res) => {
     const [draft, published, scheduled, recentAuditLogs] = await Promise.all([
         articlesCollection().countDocuments({ status: 'draft' }),
