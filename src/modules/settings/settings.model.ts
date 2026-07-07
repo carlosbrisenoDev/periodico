@@ -6,6 +6,8 @@ export interface GlobalSettings {
   adsenseEnabled: boolean;
   adsenseClientId: string;
   commentBlocklist: string[];
+  printEditionImageUrl?: string;
+  printEditionLink?: string;
   updatedAt: Date;
 }
 
@@ -15,6 +17,8 @@ const settingsSchema = new Schema<GlobalSettings>(
     adsenseEnabled: { type: Boolean, default: false },
     adsenseClientId: { type: String, default: '' },
     commentBlocklist: { type: [String], default: [] },
+    printEditionImageUrl: { type: String, default: '' },
+    printEditionLink: { type: String, default: '' },
     updatedAt: { type: Date, default: Date.now }
   },
   { collection: 'settings' }

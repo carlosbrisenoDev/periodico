@@ -8,6 +8,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
   adsenseEnabled: false,
   adsenseClientId: '',
   commentBlocklist: [],
+  printEditionImageUrl: '',
+  printEditionLink: '',
   updatedAt: new Date()
 };
 
@@ -26,7 +28,7 @@ export const getSettings = async (req: Request, res: Response): Promise<void> =>
 
 export const updateSettings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { adsenseEnabled, adsenseClientId, commentBlocklist } = req.body;
+    const { adsenseEnabled, adsenseClientId, commentBlocklist, printEditionImageUrl, printEditionLink } = req.body;
     
     // Validations can be done via schema, but we will ensure valid data structure here
     const updateData: Partial<GlobalSettings> = {
@@ -36,6 +38,8 @@ export const updateSettings = async (req: AuthenticatedRequest, res: Response): 
     if (typeof adsenseEnabled === 'boolean') updateData.adsenseEnabled = adsenseEnabled;
     if (typeof adsenseClientId === 'string') updateData.adsenseClientId = adsenseClientId;
     if (Array.isArray(commentBlocklist)) updateData.commentBlocklist = commentBlocklist.map(s => String(s).trim()).filter(Boolean);
+    if (typeof printEditionImageUrl === 'string') updateData.printEditionImageUrl = printEditionImageUrl;
+    if (typeof printEditionLink === 'string') updateData.printEditionLink = printEditionLink;
 
     const result = await settingsCollection().findOneAndUpdate(
       { _id: 'global' },
@@ -62,13 +66,17 @@ export const getPublicSettings = async (req: Request, res: Response): Promise<vo
     if (!settings) {
       res.status(200).json({
         adsenseEnabled: DEFAULT_SETTINGS.adsenseEnabled,
-        adsenseClientId: DEFAULT_SETTINGS.adsenseClientId
+        adsenseClientId: DEFAULT_SETTINGS.adsenseClientId,
+        printEditionImageUrl: DEFAULT_SETTINGS.printEditionImageUrl,
+        printEditionLink: DEFAULT_SETTINGS.printEditionLink
       });
       return;
     }
     res.status(200).json({
       adsenseEnabled: settings.adsenseEnabled,
-      adsenseClientId: settings.adsenseClientId
+      adsenseClientId: settings.adsenseClientId,
+      printEditionImageUrl: settings.printEditionImageUrl,
+      printEditionLink: settings.printEditionLink
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching public settings' });
