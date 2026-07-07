@@ -5,6 +5,8 @@ const settingsSchema = new Schema({
     adsenseEnabled: { type: Boolean, default: false },
     adsenseClientId: { type: String, default: '' },
     commentBlocklist: { type: [String], default: [] },
+    printEditionImageUrl: { type: String, default: '' },
+    printEditionLink: { type: String, default: '' },
     updatedAt: { type: Date, default: Date.now }
 }, { collection: 'settings' });
 export const SettingsModel = mongoose.model('Settings', settingsSchema);

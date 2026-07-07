@@ -5,6 +5,8 @@ const DEFAULT_SETTINGS = {
     adsenseEnabled: false,
     adsenseClientId: '',
     commentBlocklist: [],
+    printEditionImageUrl: '',
+    printEditionLink: '',
     updatedAt: new Date()
 };
 export const getSettings = async (req, res) => {
@@ -22,7 +24,7 @@ export const getSettings = async (req, res) => {
 };
 export const updateSettings = async (req, res) => {
     try {
-        const { adsenseEnabled, adsenseClientId, commentBlocklist } = req.body;
+        const { adsenseEnabled, adsenseClientId, commentBlocklist, printEditionImageUrl, printEditionLink } = req.body;
         // Validations can be done via schema, but we will ensure valid data structure here
         const updateData = {
             updatedAt: new Date()
@@ -33,6 +35,10 @@ export const updateSettings = async (req, res) => {
             updateData.adsenseClientId = adsenseClientId;
         if (Array.isArray(commentBlocklist))
             updateData.commentBlocklist = commentBlocklist.map(s => String(s).trim()).filter(Boolean);
+        if (typeof printEditionImageUrl === 'string')
+            updateData.printEditionImageUrl = printEditionImageUrl;
+        if (typeof printEditionLink === 'string')
+            updateData.printEditionLink = printEditionLink;
         const result = await settingsCollection().findOneAndUpdate({ _id: 'global' }, { $set: updateData }, { upsert: true, returnDocument: 'after' });
         if (req.user) {
             await logAudit('update', 'Settings', 'global', req.user.userId, JSON.stringify(updateData), {
@@ -52,13 +58,17 @@ export const getPublicSettings = async (req, res) => {
         if (!settings) {
             res.status(200).json({
                 adsenseEnabled: DEFAULT_SETTINGS.adsenseEnabled,
-                adsenseClientId: DEFAULT_SETTINGS.adsenseClientId
+                adsenseClientId: DEFAULT_SETTINGS.adsenseClientId,
+                printEditionImageUrl: DEFAULT_SETTINGS.printEditionImageUrl,
+                printEditionLink: DEFAULT_SETTINGS.printEditionLink
             });
             return;
         }
         res.status(200).json({
             adsenseEnabled: settings.adsenseEnabled,
-            adsenseClientId: settings.adsenseClientId
+            adsenseClientId: settings.adsenseClientId,
+            printEditionImageUrl: settings.printEditionImageUrl,
+            printEditionLink: settings.printEditionLink
         });
     }
     catch (error) {
