@@ -13,17 +13,12 @@ import { verifyAuthToken } from '../../libs/jwt.js';
 const PUBLIC_API_BASE_PATH = '/api/v1/public';
 const FEATURED_HERO_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-const resolveFeaturedType = (article: { isFeatured: boolean; featuredType?: string | null }): 'none' | 'hero' | 'headline' | 'breaking' => {
-  if (
-    article.featuredType === 'hero' ||
-    article.featuredType === 'headline' ||
-    article.featuredType === 'breaking' ||
-    article.featuredType === 'none'
-  ) {
-    return article.featuredType;
+const resolveFeaturedTypes = (article: { isFeatured: boolean; featuredTypes?: string[] | null }): string[] => {
+  if (Array.isArray(article.featuredTypes)) {
+    return article.featuredTypes.filter(t => ['hero', 'headline', 'breaking', 'category_hero', 'las_5_de_x'].includes(t));
   }
 
-  return article.isFeatured ? 'hero' : 'none';
+  return article.isFeatured ? ['hero'] : [];
 };
 
 /**
@@ -57,18 +52,18 @@ const syncScheduledArticles = async (): Promise<void> => {
 
 const isActiveFeaturedArticle = (article: {
   isFeatured: boolean;
-  featuredType?: string | null;
+  featuredTypes?: string[] | null;
   featuredAt?: Date | null;
   updatedAt: Date;
   createdAt: Date;
 }): boolean => {
-  const featuredType = resolveFeaturedType(article);
+  const featuredTypes = resolveFeaturedTypes(article);
 
-  if (featuredType === 'none') {
+  if (featuredTypes.length === 0) {
     return false;
   }
 
-  if (featuredType !== 'hero') {
+  if (!featuredTypes.includes('hero')) {
     return true;
   }
 
@@ -84,7 +79,7 @@ const toPublicArticle = async (article: {
   content: string;
   featuredImageUrl: string | null;
   isFeatured: boolean;
-  featuredType?: string | null;
+  featuredTypes?: string[] | null;
   featuredAt?: Date | null;
   authorId: ObjectId;
   categoryIds: ObjectId[];
@@ -117,7 +112,7 @@ const toPublicArticle = async (article: {
     content: article.content,
     featuredImageUrl: article.featuredImageUrl,
     isFeatured: activeFeatured,
-    featuredType: activeFeatured ? resolveFeaturedType(article) : 'none',
+    featuredTypes: activeFeatured ? resolveFeaturedTypes(article) : [],
     featuredAt: activeFeatured ? article.featuredAt : null,
     author: author
       ? {

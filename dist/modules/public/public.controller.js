@@ -4,14 +4,11 @@ import { env } from '../../config.js';
 import { verifyAuthToken } from '../../libs/jwt.js';
 const PUBLIC_API_BASE_PATH = '/api/v1/public';
 const FEATURED_HERO_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-const resolveFeaturedType = (article) => {
-    if (article.featuredType === 'hero' ||
-        article.featuredType === 'headline' ||
-        article.featuredType === 'breaking' ||
-        article.featuredType === 'none') {
-        return article.featuredType;
+const resolveFeaturedTypes = (article) => {
+    if (Array.isArray(article.featuredTypes)) {
+        return article.featuredTypes.filter(t => ['hero', 'headline', 'breaking', 'category_hero', 'las_5_de_x'].includes(t));
     }
-    return article.isFeatured ? 'hero' : 'none';
+    return article.isFeatured ? ['hero'] : [];
 };
 /**
  * Ensures that articles whose scheduled time has passed are marked as 'published'.
@@ -39,11 +36,11 @@ const syncScheduledArticles = async () => {
     ]);
 };
 const isActiveFeaturedArticle = (article) => {
-    const featuredType = resolveFeaturedType(article);
-    if (featuredType === 'none') {
+    const featuredTypes = resolveFeaturedTypes(article);
+    if (featuredTypes.length === 0) {
         return false;
     }
-    if (featuredType !== 'hero') {
+    if (!featuredTypes.includes('hero')) {
         return true;
     }
     const startedAt = article.featuredAt ?? article.updatedAt ?? article.createdAt;
@@ -66,7 +63,7 @@ const toPublicArticle = async (article) => {
         content: article.content,
         featuredImageUrl: article.featuredImageUrl,
         isFeatured: activeFeatured,
-        featuredType: activeFeatured ? resolveFeaturedType(article) : 'none',
+        featuredTypes: activeFeatured ? resolveFeaturedTypes(article) : [],
         featuredAt: activeFeatured ? article.featuredAt : null,
         author: author
             ? {

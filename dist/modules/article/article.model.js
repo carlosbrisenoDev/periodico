@@ -61,10 +61,10 @@ const articleSchema = new Schema({
         type: Boolean,
         default: true
     },
-    featuredType: {
-        type: String,
-        enum: ['none', 'hero', 'headline', 'category_hero', 'breaking'],
-        default: 'none',
+    featuredTypes: {
+        type: [String],
+        enum: ['none', 'hero', 'headline', 'category_hero', 'breaking', 'las_5_de_x'],
+        default: [],
         index: true
     },
     featuredAt: {

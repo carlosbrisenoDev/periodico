@@ -12,30 +12,43 @@ export const uploadImage = async (req, res) => {
     try {
         const originalPath = req.file.path;
         const parsedPath = path.parse(originalPath);
-        const webpFilename = `${parsedPath.name}.webp`;
-        const webpPath = path.join(parsedPath.dir, webpFilename);
-        const sharpInfo = await sharp(originalPath)
-            .resize({ width: 1200, withoutEnlargement: true })
-            .webp({ quality: 75 })
-            .toFile(webpPath);
-        await unlink(originalPath);
-        const url = `/uploads/featured/${webpFilename}`;
+        let finalFilename;
+        let finalMimeType;
+        let finalSize;
+        if (req.file.mimetype === 'application/pdf') {
+            finalFilename = req.file.filename;
+            finalMimeType = 'application/pdf';
+            finalSize = req.file.size;
+        }
+        else {
+            finalFilename = `${parsedPath.name}.webp`;
+            const webpPath = path.join(parsedPath.dir, finalFilename);
+            const sharpInfo = await sharp(originalPath)
+                .resize({ width: 1200, withoutEnlargement: true })
+                .webp({ quality: 75 })
+                .toFile(webpPath);
+            finalMimeType = 'image/webp';
+            finalSize = sharpInfo.size;
+            await unlink(originalPath);
+        }
+        const url = `/uploads/featured/${finalFilename}`;
         const result = await imagesCollection().insertOne({
             _id: new ObjectId(),
-            filename: webpFilename,
+            filename: finalFilename,
             url,
-            mimeType: 'image/webp',
-            size: sharpInfo.size,
+            mimeType: finalMimeType,
+            size: finalSize,
             createdAt: new Date()
         });
         res.status(201).json({
             id: result.insertedId.toString(),
-            filename: webpFilename,
+            filename: finalFilename,
             url
         });
     }
     catch (error) {
-        res.status(500).json({ message: 'Error processing image' });
+        console.error('Error processing upload:', error);
+        res.status(500).json({ message: 'Error processing upload' });
     }
 };
 export const listRecentImages = async (req, res) => {

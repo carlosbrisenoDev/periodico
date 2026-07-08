@@ -23,7 +23,8 @@ const MIME_EXTENSION_MAP = {
     'image/jpeg': '.jpg',
     'image/png': '.png',
     'image/webp': '.webp',
-    'image/avif': '.avif'
+    'image/avif': '.avif',
+    'application/pdf': '.pdf'
 };
 const sanitizeBaseName = (value) => {
     const normalized = value
@@ -59,7 +60,7 @@ export const uploadFeaturedImage = multer({
     storage,
     limits: { fileSize: env.MAX_UPLOAD_MB * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
-        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'application/pdf'];
         cb(null, allowedMimeTypes.includes(file.mimetype));
     }
 });

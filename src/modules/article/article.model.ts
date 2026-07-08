@@ -2,7 +2,7 @@ import mongoose, {Schema, Types} from 'mongoose';
 import {createCollectionAdapter} from '../../libs/mongoose-adapter.js';
 
 export type ArticleStatus = 'draft' | 'published' | 'scheduled';
-export type ArticleFeaturedType = 'none' | 'hero' | 'headline' | 'category_hero' | 'breaking';
+export type ArticleFeaturedType = 'none' | 'hero' | 'headline' | 'category_hero' | 'breaking' | 'las_5_de_x';
 
 export type ArticleDoc = {
     _id: Types.ObjectId;
@@ -18,7 +18,7 @@ export type ArticleDoc = {
     status: ArticleStatus;
     isFeatured: boolean;
     allowComments: boolean;
-    featuredType: ArticleFeaturedType;
+    featuredTypes: ArticleFeaturedType[];
     featuredAt: Date | null;
     deletedAt: Date | null;
     authorId: Types.ObjectId;
@@ -89,10 +89,10 @@ const articleSchema = new Schema<ArticleDoc>({
         type: Boolean,
         default: true
     },
-    featuredType: {
-        type: String,
-        enum: ['none', 'hero', 'headline', 'category_hero', 'breaking'],
-        default: 'none',
+    featuredTypes: {
+        type: [String],
+        enum: ['none', 'hero', 'headline', 'category_hero', 'breaking', 'las_5_de_x'],
+        default: [],
         index: true
     },
     featuredAt: {
