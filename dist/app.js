@@ -32,10 +32,15 @@ app.use(corsMiddleware);
 app.use(morgan('dev'));
 app.use(cookieParser());
 app.use(express.json({ limit: `${env.MAX_UPLOAD_MB}mb` }));
+// Archivos estáticos de subidas
 app.use('/uploads', express.static(path.resolve('uploads')));
-app.get('/health', (_req, res) => {
+// Healthcheck
+app.get(['/health', '/api/health'], (_req, res) => {
     res.status(200).json({ status: 'ok' });
 });
+// ==========================================
+// 1. RUTAS DEL BACKEND (API)
+// ==========================================
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/author', authorRoutes);
@@ -52,9 +57,30 @@ app.use('/api/v1/citizen-reports', citizenReportRoutes);
 app.use('/api/v1/audit', auditRoutes);
 app.use('/api/v1/video', validateToken, videoRoutes);
 app.use('/api/v1/settings', validateToken, settingsRoutes);
+// Manejador 404 exclusivo para la API
+// Evita que peticiones erróneas a /api respondan con un index.html
+app.all(/^\/api\//, (_req, res) => {
+    res.status(404).json({ message: 'API endpoint not found' });
+});
+// ==========================================
+// 2. RUTAS DEL FRONTEND (Archivos Estáticos y SPA)
+// ==========================================
+const frontendPath = path.resolve('../periodico-ia-front/dist');
+// Sirve los assets estáticos (CSS, JS, imágenes del frontend)
+app.use(express.static(frontendPath));
+// Catch-all: Cualquier petición GET que no haya caído en la API ni en estáticos,
+// devuelve el index.html para que el enrutador del frontend (React/Vue/etc.) tome el control.
+app.get(/.*/, (_req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
+// ==========================================
+// 3. MANEJADORES DE ERRORES GLOBALES
+// ==========================================
+// Fallback 404 para cualquier otro método (POST, PUT, DELETE) fuera de /api
 app.use((_req, res) => {
     res.status(404).json({ message: 'Not found' });
 });
+// Manejador de errores del servidor (500)
 app.use((error, _req, res, _next) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
 });

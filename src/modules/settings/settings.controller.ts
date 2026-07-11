@@ -10,6 +10,12 @@ const DEFAULT_SETTINGS: GlobalSettings = {
   commentBlocklist: [],
   printEditionImageUrl: '',
   printEditionLink: '',
+  themeColors: {
+    background: '#ffffff',
+    foreground: '#20242b',
+    navbarBg: '#ffffff',
+    primaryColor: '#2563eb'
+  },
   updatedAt: new Date()
 };
 
@@ -28,7 +34,7 @@ export const getSettings = async (req: Request, res: Response): Promise<void> =>
 
 export const updateSettings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { adsenseEnabled, adsenseClientId, commentBlocklist, printEditionImageUrl, printEditionLink } = req.body;
+    const { adsenseEnabled, adsenseClientId, commentBlocklist, printEditionImageUrl, printEditionLink, themeColors } = req.body;
     
     // Validations can be done via schema, but we will ensure valid data structure here
     const updateData: Partial<GlobalSettings> = {
@@ -40,6 +46,14 @@ export const updateSettings = async (req: AuthenticatedRequest, res: Response): 
     if (Array.isArray(commentBlocklist)) updateData.commentBlocklist = commentBlocklist.map(s => String(s).trim()).filter(Boolean);
     if (typeof printEditionImageUrl === 'string') updateData.printEditionImageUrl = printEditionImageUrl;
     if (typeof printEditionLink === 'string') updateData.printEditionLink = printEditionLink;
+    if (themeColors && typeof themeColors === 'object') {
+      updateData.themeColors = {
+        background: String(themeColors.background || '#ffffff'),
+        foreground: String(themeColors.foreground || '#20242b'),
+        navbarBg: String(themeColors.navbarBg || '#ffffff'),
+        primaryColor: String(themeColors.primaryColor || '#2563eb')
+      };
+    }
 
     const result = await settingsCollection().findOneAndUpdate(
       { _id: 'global' },
@@ -68,7 +82,8 @@ export const getPublicSettings = async (req: Request, res: Response): Promise<vo
         adsenseEnabled: DEFAULT_SETTINGS.adsenseEnabled,
         adsenseClientId: DEFAULT_SETTINGS.adsenseClientId,
         printEditionImageUrl: DEFAULT_SETTINGS.printEditionImageUrl,
-        printEditionLink: DEFAULT_SETTINGS.printEditionLink
+        printEditionLink: DEFAULT_SETTINGS.printEditionLink,
+        themeColors: DEFAULT_SETTINGS.themeColors
       });
       return;
     }
@@ -76,7 +91,8 @@ export const getPublicSettings = async (req: Request, res: Response): Promise<vo
       adsenseEnabled: settings.adsenseEnabled,
       adsenseClientId: settings.adsenseClientId,
       printEditionImageUrl: settings.printEditionImageUrl,
-      printEditionLink: settings.printEditionLink
+      printEditionLink: settings.printEditionLink,
+      themeColors: settings.themeColors || DEFAULT_SETTINGS.themeColors
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching public settings' });

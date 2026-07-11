@@ -5,7 +5,7 @@ dotenv.config();
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.union([z.number(), z.string()]).default(3000),
+  PORT: z.coerce.number().default(3000),
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
   MONGODB_DB_NAME: z.string().min(1).default('periodico'),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must have at least 16 characters'),
