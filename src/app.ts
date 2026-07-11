@@ -62,7 +62,7 @@ app.use('/api/v1/comments', commentRoutes);
 app.use('/api/v1/citizen-reports', citizenReportRoutes);
 app.use('/api/v1/audit', auditRoutes);
 app.use('/api/v1/video', validateToken, videoRoutes);
-app.use('/api/v1/settings', validateToken, settingsRoutes);
+app.use('/api/v1/settings', settingsRoutes);
 
 // Manejador 404 exclusivo para la API
 // Evita que peticiones erróneas a /api respondan con un index.html
