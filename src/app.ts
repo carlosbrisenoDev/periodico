@@ -3,6 +3,9 @@ import express, { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'node:path';
+import fs from 'node:fs';
+
+import { articlesCollection } from './modules/article/article.model.js';
 
 import authRoutes from './modules/auth/index.js';
 import { env } from './config.js';
@@ -80,6 +83,60 @@ app.use(express.static(frontendPath));
 
 // Catch-all: Cualquier petición GET que no haya caído en la API ni en estáticos,
 // devuelve el index.html para que el enrutador del frontend (React/Vue/etc.) tome el control.
+
+app.get('/articulo/:slug', async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const query: any[] = [{ slug }];
+    if (/^[0-9a-fA-F]{24}$/.test(slug)) {
+      query.push({ _id: slug as any });
+    }
+    
+    const article = await articlesCollection().findOne({ $or: query });
+    
+    if (!article) {
+      return res.sendFile(path.join(frontendPath, 'index.html'));
+    }
+
+    let html = fs.readFileSync(path.join(frontendPath, 'index.html'), 'utf8');
+
+    const title = article.title ? `${article.title} | Información de Altura` : "Información de Altura";
+    let plainTextContent = article.excerpt || "Contenido de alta calidad en Información de Altura";
+
+    // Reemplaza comillas para no romper el HTML
+    plainTextContent = plainTextContent.replace(/"/g, '&quot;');
+    const safeTitle = title.replace(/"/g, '&quot;');
+
+    const host = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const imageUrl = article.featuredImageUrl 
+      ? (article.featuredImageUrl.startsWith('http') ? article.featuredImageUrl : `${host}${article.featuredImageUrl.startsWith('/') ? '' : '/'}${article.featuredImageUrl}`)
+      : `${host}/default-share.jpg`;
+
+    const url = `${host}/articulo/${article.slug || article._id}`;
+
+    const metaTags = `
+      <title>${safeTitle}</title>
+      <meta name="description" content="${plainTextContent}">
+      <meta property="og:type" content="article">
+      <meta property="og:title" content="${safeTitle}">
+      <meta property="og:description" content="${plainTextContent}">
+      <meta property="og:image" content="${imageUrl}">
+      <meta property="og:url" content="${url}">
+      <meta property="og:site_name" content="Información de Altura">
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:title" content="${safeTitle}">
+      <meta name="twitter:description" content="${plainTextContent}">
+      <meta name="twitter:image" content="${imageUrl}">
+    `;
+
+    html = html.replace('</head>', `${metaTags}</head>`);
+    
+    res.send(html);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get(/.*/, (_req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
