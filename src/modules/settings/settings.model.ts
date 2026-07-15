@@ -20,6 +20,7 @@ export interface GlobalSettings {
     mutedText: string;
     surface: string;
     border: string;
+    cardBorder: string;
   };
   updatedAt: Date;
 }
@@ -43,7 +44,8 @@ const settingsSchema = new Schema<GlobalSettings>(
       liveBarText: { type: String, default: '#ffffff' },
       mutedText: { type: String, default: '#6f7280' },
       surface: { type: String, default: '#ffffff' },
-      border: { type: String, default: '#e2e3e6' }
+      border: { type: String, default: '#e2e3e6' },
+      cardBorder: { type: String, default: '#c32f27' }
     },
     updatedAt: { type: Date, default: Date.now }
   },

@@ -65,7 +65,8 @@ export const updateSettings = async (req: AuthenticatedRequest, res: Response): 
         liveBarText: String(themeColors.liveBarText || '#ffffff'),
         mutedText: String(themeColors.mutedText || '#6f7280'),
         surface: String(themeColors.surface || '#ffffff'),
-        border: String(themeColors.border || '#e2e3e6')
+        border: String(themeColors.border || '#e2e3e6'),
+        cardBorder: String(themeColors.cardBorder || 'transparent')
       };
     }
 
