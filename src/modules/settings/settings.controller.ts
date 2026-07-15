@@ -21,7 +21,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
     liveBarText: '#ffffff',
     mutedText: '#6f7280',
     surface: '#ffffff',
-    border: '#e2e3e6'
+    border: '#e2e3e6',
+    cardBorder: 'transparent'
   },
   updatedAt: new Date()
 };

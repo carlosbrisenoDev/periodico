@@ -12,8 +12,8 @@ export const addVideo = async (req, res) => {
         }
         let platform = 'other';
         let videoExternalId = '';
-        // Robust Youtube extraction
-        const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
+        // Robust Youtube extraction including shorts and live
+        const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([\w-]{11})/i);
         // Robust Twitter/X extraction
         const twMatch = url.match(/(?:twitter\.com|x\.com)\/\w+\/status(?:es)?\/(\d+)/i);
         if (ytMatch && ytMatch[1]) {

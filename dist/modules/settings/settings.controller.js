@@ -11,7 +11,15 @@ const DEFAULT_SETTINGS = {
         background: '#ffffff',
         foreground: '#20242b',
         navbarBg: '#ffffff',
-        primaryColor: '#2563eb'
+        primaryColor: '#2563eb',
+        footerBg: '#111827',
+        footerText: '#f9fafb',
+        liveBarBg: '#dc2626',
+        liveBarText: '#ffffff',
+        mutedText: '#6f7280',
+        surface: '#ffffff',
+        border: '#e2e3e6',
+        cardBorder: 'transparent'
     },
     updatedAt: new Date()
 };
@@ -50,7 +58,15 @@ export const updateSettings = async (req, res) => {
                 background: String(themeColors.background || '#ffffff'),
                 foreground: String(themeColors.foreground || '#20242b'),
                 navbarBg: String(themeColors.navbarBg || '#ffffff'),
-                primaryColor: String(themeColors.primaryColor || '#2563eb')
+                primaryColor: String(themeColors.primaryColor || '#2563eb'),
+                footerBg: String(themeColors.footerBg || '#111827'),
+                footerText: String(themeColors.footerText || '#f9fafb'),
+                liveBarBg: String(themeColors.liveBarBg || '#dc2626'),
+                liveBarText: String(themeColors.liveBarText || '#ffffff'),
+                mutedText: String(themeColors.mutedText || '#6f7280'),
+                surface: String(themeColors.surface || '#ffffff'),
+                border: String(themeColors.border || '#e2e3e6'),
+                cardBorder: String(themeColors.cardBorder || 'transparent')
             };
         }
         const result = await settingsCollection().findOneAndUpdate({ _id: 'global' }, { $set: updateData }, { upsert: true, returnDocument: 'after' });
