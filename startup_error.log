@@ -1,5 +1,5 @@
 Startup error: MongooseServerSelectionError: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017
-    at _handleConnectionErrors (/Users/carlos/Documents/Trabajo/creados/periodico/node_modules/mongoose/lib/connection.js:1180:11)
-    at NativeConnection.openUri (/Users/carlos/Documents/Trabajo/creados/periodico/node_modules/mongoose/lib/connection.js:1111:11)
-    at async connectDatabase (/Users/carlos/Documents/Trabajo/creados/periodico/src/db.ts:11:3)
-    at async bootstrap (/Users/carlos/Documents/Trabajo/creados/periodico/src/index.ts:70:3)
+    at _handleConnectionErrors (/Users/carlos/Documents/Trabajo/creados/InformacionDeAltura/periodico/node_modules/mongoose/lib/connection.js:1180:11)
+    at NativeConnection.openUri (/Users/carlos/Documents/Trabajo/creados/InformacionDeAltura/periodico/node_modules/mongoose/lib/connection.js:1111:11)
+    at async connectDatabase (/Users/carlos/Documents/Trabajo/creados/InformacionDeAltura/periodico/src/db.ts:11:3)
+    at async bootstrap (/Users/carlos/Documents/Trabajo/creados/InformacionDeAltura/periodico/src/index.ts:70:3)

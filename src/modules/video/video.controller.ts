@@ -19,8 +19,8 @@ export const addVideo = async (req: AuthenticatedRequest, res: Response): Promis
     let platform: 'youtube' | 'twitter' | 'other' = 'other';
     let videoExternalId = '';
 
-    // Robust Youtube extraction
-    const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
+    // Robust Youtube extraction including shorts and live
+    const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([\w-]{11})/i);
     // Robust Twitter/X extraction
     const twMatch = url.match(/(?:twitter\.com|x\.com)\/\w+\/status(?:es)?\/(\d+)/i);
 
