@@ -61,6 +61,19 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     // Fire-and-forget welcome email (don't block the response)
     void sendWelcomeEmail(subscriber.email, subscriber.username);
 
+    // Log local conversion in Express analytics
+    try {
+      const { AnalyticsEventModel } = await import('../analytics/analytics.model.js');
+      await AnalyticsEventModel.create({
+        type: 'conversion',
+        url: '/api/v1/subscribers/register',
+        metadata: { conversionType: 'registration', subscriberId: subscriber._id.toString() },
+        ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress)
+      });
+    } catch (err) {
+      console.error('Failed to log local conversion:', err);
+    }
+
     const token = signSubscriberToken({
       subscriberId: subscriber._id.toString(),
       email: subscriber.email,

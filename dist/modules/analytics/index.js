@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { logView, logTab, logNavigation, logTime, logConversion, getLogs } from './analytics.controller.js';
+const router = Router();
+router.post('/views', logView);
+router.post('/tabs', logTab);
+router.post('/navigation', logNavigation);
+router.post('/time', logTime);
+router.post('/conversions', logConversion);
+router.get('/logs', getLogs);
+export default router;
