@@ -32,6 +32,11 @@ const articleSchema = new Schema({
         required: false,
         default: null
     },
+    featuredImagePosition: {
+        type: String,
+        required: false,
+        default: 'center'
+    },
     isVideoGallery: {
         type: Boolean,
         default: false

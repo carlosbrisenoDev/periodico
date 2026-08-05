@@ -120,6 +120,7 @@ const toArticleResponse = (article) => ({
     content: article.content,
     featuredImageUrl: article.featuredImageUrl,
     featuredImageCaption: article.featuredImageCaption,
+    featuredImagePosition: article.featuredImagePosition ?? 'center',
     isVideoGallery: article.isVideoGallery ?? false,
     videoUrl: article.videoUrl ?? null,
     tags: article.tags ?? [],
@@ -218,7 +219,7 @@ const generateUniqueSlug = async (base, currentId) => {
 };
 export const createArticle = async (req, res) => {
     try {
-        const { title, slug, excerpt, content, featuredImageUrl, featuredImageCaption, isVideoGallery, videoUrl, tags, status, isFeatured, allowComments, featuredTypes, authorId, categoryIds, scheduledAt } = req.body;
+        const { title, slug, excerpt, content, featuredImageUrl, featuredImageCaption, featuredImagePosition, isVideoGallery, videoUrl, tags, status, isFeatured, allowComments, featuredTypes, authorId, categoryIds, scheduledAt } = req.body;
         const authorObjectId = parseObjectId(authorId);
         if (!authorObjectId) {
             res.status(400).json({ message: 'Invalid authorId' });
@@ -289,6 +290,7 @@ export const createArticle = async (req, res) => {
             content,
             featuredImageUrl: featuredImageUrl ?? null,
             featuredImageCaption: featuredImageCaption ?? null,
+            featuredImagePosition: featuredImagePosition ?? 'center',
             isVideoGallery: typeof isVideoGallery === 'boolean' ? isVideoGallery : false,
             videoUrl: videoUrl ?? null,
             tags: normalizeTags(tags),
@@ -413,6 +415,9 @@ export const updateArticle = async (req, res) => {
     }
     if (req.body.featuredImageCaption !== undefined) {
         updates.featuredImageCaption = req.body.featuredImageCaption;
+    }
+    if (req.body.featuredImagePosition !== undefined) {
+        updates.featuredImagePosition = req.body.featuredImagePosition;
     }
     if (req.body.isVideoGallery !== undefined) {
         updates.isVideoGallery = typeof req.body.isVideoGallery === 'boolean' ? req.body.isVideoGallery : false;
@@ -641,6 +646,7 @@ export const duplicateArticle = async (req, res) => {
         content: articleFound.content,
         featuredImageUrl: articleFound.featuredImageUrl,
         featuredImageCaption: articleFound.featuredImageCaption,
+        featuredImagePosition: articleFound.featuredImagePosition ?? 'center',
         isVideoGallery: articleFound.isVideoGallery,
         videoUrl: articleFound.videoUrl,
         tags: articleFound.tags ?? [],

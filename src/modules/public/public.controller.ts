@@ -78,6 +78,7 @@ const toPublicArticle = async (article: {
   excerpt: string;
   content: string;
   featuredImageUrl: string | null;
+  featuredImagePosition?: string | null;
   isFeatured: boolean;
   featuredTypes?: string[] | null;
   featuredAt?: Date | null;
@@ -111,6 +112,7 @@ const toPublicArticle = async (article: {
     excerpt: article.excerpt,
     content: article.content,
     featuredImageUrl: article.featuredImageUrl,
+    featuredImagePosition: article.featuredImagePosition ?? 'center',
     isFeatured: activeFeatured,
     featuredTypes: activeFeatured ? resolveFeaturedTypes(article) : [],
     featuredAt: activeFeatured ? article.featuredAt : null,
@@ -182,6 +184,7 @@ const toRecommendedArticle = async (
     excerpt: string;
     content: string;
     featuredImageUrl: string | null;
+    featuredImagePosition?: string | null;
     isFeatured: boolean;
     authorId: ObjectId;
     categoryIds: ObjectId[];

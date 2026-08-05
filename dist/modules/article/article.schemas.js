@@ -12,6 +12,7 @@ export const createArticleSchema = z.object({
     content: z.string().min(10),
     featuredImageUrl: z.string().min(1).nullable().optional(),
     featuredImageCaption: z.string().nullable().optional(),
+    featuredImagePosition: z.string().nullable().optional(),
     isVideoGallery: z.boolean().default(false).optional(),
     videoUrl: z.string().nullable().optional(),
     tags: tagsSchema.optional(),

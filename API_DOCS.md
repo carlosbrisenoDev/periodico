@@ -49,7 +49,7 @@ Obtiene el historial crudo de interacciones para mostrar en el panel de administ
 
 ## 2. Dashboard Visualizador (Laravel)
 **Base URL:** `http://localhost:8000`  
-**Headers Requeridos:** `X-API-KEY: <tu-api-key>`
+**Headers Opcionales:** `X-Site-ID: <id-sitio>` o `X-Site-Name: <nombre-sitio>`
 
 Laravel ya no guarda los datos del tráfico, sino que **los consume del Backend Express (`localhost:3000/api/v1/analytics/logs`)** y los procesa para crear estadísticas, porcentajes y gráficas de la UI.
 

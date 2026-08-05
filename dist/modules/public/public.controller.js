@@ -62,6 +62,7 @@ const toPublicArticle = async (article) => {
         excerpt: article.excerpt,
         content: article.content,
         featuredImageUrl: article.featuredImageUrl,
+        featuredImagePosition: article.featuredImagePosition ?? 'center',
         isFeatured: activeFeatured,
         featuredTypes: activeFeatured ? resolveFeaturedTypes(article) : [],
         featuredAt: activeFeatured ? article.featuredAt : null,

@@ -12,6 +12,7 @@ export type ArticleDoc = {
     content: string;
     featuredImageUrl: string | null;
     featuredImageCaption: string | null;
+    featuredImagePosition: string | null;
     isVideoGallery: boolean;
     videoUrl: string | null;
     tags: string[];
@@ -61,6 +62,11 @@ const articleSchema = new Schema<ArticleDoc>({
         type: String,
         required: false,
         default: null
+    },
+    featuredImagePosition: {
+        type: String,
+        required: false,
+        default: 'center'
     },
     isVideoGallery: {
         type: Boolean,

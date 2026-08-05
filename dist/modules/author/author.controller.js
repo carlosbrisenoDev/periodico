@@ -123,6 +123,7 @@ export const getAuthorArticles = async (req, res) => {
             slug: article.slug,
             excerpt: article.excerpt,
             featuredImageUrl: article.featuredImageUrl,
+            featuredImagePosition: article.featuredImagePosition ?? 'center',
             status: article.status,
             isFeatured: article.isFeatured,
             categoryIds: article.categoryIds.map((categoryId) => categoryId.toString()),
