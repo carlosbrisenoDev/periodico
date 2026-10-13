@@ -31,13 +31,13 @@ import { validateToken } from './middlewares/validateToken.js';
 
 export const app = express();
 
+app.use(morgan('dev'));
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   xFrameOptions: false,
   contentSecurityPolicy: false
 }));
 app.use(corsMiddleware);
-app.use(morgan('dev'));
 app.use(cookieParser());
 app.use(express.json({ limit: `${env.MAX_UPLOAD_MB}mb` }));
 
