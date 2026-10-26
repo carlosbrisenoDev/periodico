@@ -35,17 +35,13 @@ const syncScheduledArticles = async () => {
         }
     ]);
 };
-const isActiveFeaturedArticle = (article) => {
-    const featuredTypes = resolveFeaturedTypes(article);
-    if (featuredTypes.length === 0) {
-        return false;
-    }
-    if (!featuredTypes.includes('hero')) {
-        return true;
-    }
+const activeFeaturedTypes = (article) => {
+    const types = resolveFeaturedTypes(article);
     const startedAt = article.featuredAt ?? article.updatedAt ?? article.createdAt;
-    return Date.now() - startedAt.getTime() < FEATURED_HERO_MAX_AGE_MS;
+    return Date.now() - startedAt.getTime() < FEATURED_HERO_MAX_AGE_MS
+        ? types : types.filter(type => type !== 'hero');
 };
+const isActiveFeaturedArticle = (article) => activeFeaturedTypes(article).length > 0;
 const toPublicArticle = async (article) => {
     const [author, categories] = await Promise.all([
         publicAuthorsCollection().findOne({ _id: article.authorId }),
@@ -64,7 +60,7 @@ const toPublicArticle = async (article) => {
         featuredImageUrl: article.featuredImageUrl,
         featuredImagePosition: article.featuredImagePosition ?? 'center',
         isFeatured: activeFeatured,
-        featuredTypes: activeFeatured ? resolveFeaturedTypes(article) : [],
+        featuredTypes: activeFeaturedTypes(article),
         featuredAt: activeFeatured ? article.featuredAt : null,
         author: author
             ? {
@@ -100,10 +96,10 @@ const getPublicArticles = async (options) => {
     const articles = await publicArticlesCollection()
         .find(filter)
         .sort(options.sort)
-        .limit(options.isFeatured ? options.limit * 4 : options.limit)
+        .limit(options.allFeatured ? 0 : options.isFeatured ? options.limit * 4 : options.limit)
         .toArray();
     const normalizedArticles = options.isFeatured
-        ? articles.filter((article) => isActiveFeaturedArticle(article)).slice(0, options.limit)
+        ? articles.filter((article) => isActiveFeaturedArticle(article)).slice(0, options.allFeatured ? undefined : options.limit)
         : articles.slice(0, options.limit);
     return Promise.all(normalizedArticles.map(toPublicArticle));
 };
@@ -125,7 +121,8 @@ export const getHome = async (_req, res) => {
         getPublicArticles({
             limit: 50,
             sort: { publishedAt: -1, createdAt: -1 },
-            isFeatured: true
+            isFeatured: true,
+            allFeatured: true
         }),
         getPublicArticles({ limit: 8, sort: { createdAt: -1 } })
     ]);
@@ -287,6 +284,18 @@ export const getArticlesByCategorySlug = async (req, res) => {
         },
         articles: await Promise.all(articles.map(toPublicArticle))
     });
+};
+export const listPublicArticles = async (req, res) => {
+    await syncScheduledArticles();
+    const page = Number(req.query.page || 1);
+    const limit = Number(req.query.limit || 20);
+    const filter = isPublishableFilter();
+    const [total, articles] = await Promise.all([
+        publicArticlesCollection().countDocuments(filter),
+        publicArticlesCollection().find(filter).sort({ publishedAt: -1, createdAt: -1, _id: -1 })
+            .skip((page - 1) * limit).limit(limit).toArray()
+    ]);
+    res.json({ items: await Promise.all(articles.map(toPublicArticle)), page, total, totalPages: Math.max(1, Math.ceil(total / limit)) });
 };
 export const searchArticles = async (req, res) => {
     await syncScheduledArticles();

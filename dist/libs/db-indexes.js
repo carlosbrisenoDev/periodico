@@ -4,6 +4,7 @@ import { CategoryModel } from '../modules/category/category.model.js';
 import { ImageModel } from '../modules/image/image.model.js';
 import { SocialModel } from '../modules/social/social.model.js';
 import { UserModel } from '../modules/auth/auth.model.js';
+import { PollModel } from '../modules/polls/poll.model.js';
 export const ensureDatabaseIndexes = async () => {
     await Promise.all([
         UserModel.syncIndexes(),
@@ -11,6 +12,7 @@ export const ensureDatabaseIndexes = async () => {
         ArticleModel.syncIndexes(),
         AuthorModel.syncIndexes(),
         ImageModel.syncIndexes(),
-        SocialModel.syncIndexes()
+        SocialModel.syncIndexes(),
+        PollModel.syncIndexes()
     ]);
 };

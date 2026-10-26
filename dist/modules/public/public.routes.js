@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { validateParamsSchema, validateQuerySchema } from '../../middlewares/validator.middleware.js';
-import { getArchive, getArticleBySlug, getArticleById, getArticlesByCategorySlug, getCategories, getFeatured, getHome, getLatest, getRecent, getSitemap, getTrending, getRecommendations, searchArticles, getVideos } from './public.controller.js';
+import { listPublicArticles, getArchive, getArticleBySlug, getArticleById, getArticlesByCategorySlug, getCategories, getFeatured, getHome, getLatest, getRecent, getSitemap, getTrending, getRecommendations, searchArticles, getVideos } from './public.controller.js';
 import { getPublicSettings } from '../settings/index.js';
-import { publicArchiveSchema, publicArticleIdSchema, publicArticleSlugSchema, publicCategorySlugSchema, publicListSchema, publicRecommendationsSchema, publicSearchSchema } from './public.schemas.js';
+import { publicArticlesPageSchema, publicArchiveSchema, publicArticleIdSchema, publicArticleSlugSchema, publicCategorySlugSchema, publicListSchema, publicRecommendationsSchema, publicSearchSchema } from './public.schemas.js';
 const router = Router();
 router.get('/home', getHome);
+router.get('/articles', validateQuerySchema(publicArticlesPageSchema), listPublicArticles);
 router.get('/categories', getCategories);
 router.get('/featured', getFeatured);
 router.get('/latest', getLatest);

@@ -23,16 +23,17 @@ import auditRoutes from './modules/audit/index.js';
 import videoRoutes from './modules/video/index.js';
 import { settingsRoutes } from './modules/settings/index.js';
 import analyticsRoutes from './modules/analytics/index.js';
+import { pollRoutes } from './modules/polls/index.js';
 import { corsMiddleware } from './middlewares/cors.js';
 import { validateToken } from './middlewares/validateToken.js';
 export const app = express();
+app.use(morgan('dev'));
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
     xFrameOptions: false,
     contentSecurityPolicy: false
 }));
 app.use(corsMiddleware);
-app.use(morgan('dev'));
 app.use(cookieParser());
 app.use(express.json({ limit: `${env.MAX_UPLOAD_MB}mb` }));
 // Archivos estáticos de subidas
@@ -61,6 +62,7 @@ app.use('/api/v1/audit', auditRoutes);
 app.use('/api/v1/video', validateToken, videoRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
+app.use('/api/v1/polls', pollRoutes);
 // Manejador 404 exclusivo para la API
 // Evita que peticiones erróneas a /api respondan con un index.html
 app.all(/^\/api\//, (_req, res) => {

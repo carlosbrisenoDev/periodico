@@ -33,6 +33,7 @@ export const articleSlugSchema = z.object({
 });
 export const listArticlesQuerySchema = z.object({
     status: statusSchema.optional(),
+    authorIds: z.string().optional(),
     q: z.string().trim().min(1).optional(),
     page: z.coerce.number().int().min(1).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional()
