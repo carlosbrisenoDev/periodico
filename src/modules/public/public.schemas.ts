@@ -33,3 +33,5 @@ export const publicArchiveSchema = z.object({
 export const publicArticleIdSchema = z.object({
   id: z.string().min(1)
 });
+
+export const publicArticlesPageSchema = z.object({ page: z.coerce.number().int().min(1).default(1), limit: z.coerce.number().int().min(1).max(100).default(20) });

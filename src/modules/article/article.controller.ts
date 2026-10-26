@@ -404,6 +404,10 @@ export const listArticles = async (_req: Request, res: Response): Promise<void> 
     const queryLimit = readParam(_req.query.limit as string | string[] | undefined);
 
     const filters: Filter<ArticleDoc> = {};
+    if (typeof _req.query.authorIds === 'string') {
+        const ids = _req.query.authorIds.split(',').filter(ObjectId.isValid).map(id => new ObjectId(id));
+        filters.authorId = { $in: ids };
+    }
     if (queryStatus) {
         filters.status = queryStatus as ArticleDoc['status'];
     }
@@ -425,7 +429,7 @@ export const listArticles = async (_req: Request, res: Response): Promise<void> 
 
     const cursor = articlesCollection()
         .find(filters)
-        .sort({publishedAt: -1, createdAt: -1})
+        .sort({publishedAt: -1, createdAt: -1, _id: -1})
         .skip((page - 1) * limit)
         .limit(limit);
 
@@ -534,7 +538,7 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
 
         updates.isFeatured = nextFeaturedTypes.length > 0;
         updates.featuredTypes = nextFeaturedTypes;
-        updates.featuredAt = nextFeaturedTypes.includes('hero') ? new Date() : null;
+        updates.featuredAt = nextFeaturedTypes.length ? new Date() : null;
 
         if (nextFeaturedTypes.length > 0) {
             const articleCategories = updates.categoryIds || articleFound.categoryIds || [];
@@ -685,7 +689,7 @@ export const updateArticleFeature = async (req: Request, res: Response): Promise
         $set: {
             isFeatured: nextIsFeatured,
             featuredTypes: nextFeaturedTypes,
-            featuredAt: nextFeaturedTypes.includes('hero') ? new Date() : null,
+            featuredAt: nextFeaturedTypes.length ? new Date() : null,
             updatedAt: new Date()
         }
     }, {returnDocument: 'after'});

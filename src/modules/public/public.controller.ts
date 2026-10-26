@@ -50,26 +50,20 @@ const syncScheduledArticles = async (): Promise<void> => {
 };
 
 
-const isActiveFeaturedArticle = (article: {
+const activeFeaturedTypes = (article: {
   isFeatured: boolean;
   featuredTypes?: string[] | null;
   featuredAt?: Date | null;
   updatedAt: Date;
   createdAt: Date;
-}): boolean => {
-  const featuredTypes = resolveFeaturedTypes(article);
-
-  if (featuredTypes.length === 0) {
-    return false;
-  }
-
-  if (!featuredTypes.includes('hero')) {
-    return true;
-  }
-
+}): string[] => {
+  const types = resolveFeaturedTypes(article);
   const startedAt = article.featuredAt ?? article.updatedAt ?? article.createdAt;
-  return Date.now() - startedAt.getTime() < FEATURED_HERO_MAX_AGE_MS;
+  return Date.now() - startedAt.getTime() < FEATURED_HERO_MAX_AGE_MS
+    ? types : types.filter(type => type !== 'hero');
 };
+const isActiveFeaturedArticle = (article: Parameters<typeof activeFeaturedTypes>[0]): boolean =>
+  activeFeaturedTypes(article).length > 0;
 
 const toPublicArticle = async (article: {
   _id: ObjectId;
@@ -114,7 +108,7 @@ const toPublicArticle = async (article: {
     featuredImageUrl: article.featuredImageUrl,
     featuredImagePosition: article.featuredImagePosition ?? 'center',
     isFeatured: activeFeatured,
-    featuredTypes: activeFeatured ? resolveFeaturedTypes(article) : [],
+    featuredTypes: activeFeaturedTypes(article),
     featuredAt: activeFeatured ? article.featuredAt : null,
     author: author
       ? {
@@ -146,6 +140,7 @@ const getPublicArticles = async (options: {
   limit: number;
   sort: Record<string, 1 | -1>;
   isFeatured?: boolean;
+  allFeatured?: boolean;
 }): Promise<Record<string, unknown>[]> => {
   await syncScheduledArticles();
   const filter: Record<string, unknown> = isPublishableFilter();
@@ -156,11 +151,11 @@ const getPublicArticles = async (options: {
   const articles = await publicArticlesCollection()
     .find(filter)
     .sort(options.sort)
-    .limit(options.isFeatured ? options.limit * 4 : options.limit)
+    .limit(options.allFeatured ? 0 : options.isFeatured ? options.limit * 4 : options.limit)
     .toArray();
 
   const normalizedArticles = options.isFeatured
-    ? articles.filter((article) => isActiveFeaturedArticle(article)).slice(0, options.limit)
+    ? articles.filter((article) => isActiveFeaturedArticle(article)).slice(0, options.allFeatured ? undefined : options.limit)
     : articles.slice(0, options.limit);
 
   return Promise.all(normalizedArticles.map(toPublicArticle));
@@ -212,7 +207,8 @@ export const getHome = async (_req: Request, res: Response): Promise<void> => {
     getPublicArticles({
       limit: 50,
       sort: { publishedAt: -1, createdAt: -1 },
-      isFeatured: true
+      isFeatured: true,
+      allFeatured: true
     }),
     getPublicArticles({ limit: 8, sort: { createdAt: -1 } })
   ]);
@@ -400,6 +396,19 @@ export const getArticlesByCategorySlug = async (req: Request, res: Response): Pr
     },
     articles: await Promise.all(articles.map(toPublicArticle))
   });
+};
+
+export const listPublicArticles = async (req: Request, res: Response): Promise<void> => {
+  await syncScheduledArticles();
+  const page = Number(req.query.page || 1);
+  const limit = Number(req.query.limit || 20);
+  const filter = isPublishableFilter();
+  const [total, articles] = await Promise.all([
+    publicArticlesCollection().countDocuments(filter),
+    publicArticlesCollection().find(filter).sort({ publishedAt: -1, createdAt: -1, _id: -1 })
+      .skip((page - 1) * limit).limit(limit).toArray()
+  ]);
+  res.json({ items: await Promise.all(articles.map(toPublicArticle)), page, total, totalPages: Math.max(1, Math.ceil(total / limit)) });
 };
 
 export const searchArticles = async (req: Request, res: Response): Promise<void> => {

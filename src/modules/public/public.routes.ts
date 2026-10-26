@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { validateParamsSchema, validateQuerySchema } from '../../middlewares/validator.middleware.js';
 import {
+  listPublicArticles,
   getArchive,
   getArticleBySlug,
   getArticleById,
@@ -18,6 +19,7 @@ import {
 } from './public.controller.js';
 import { getPublicSettings } from '../settings/index.js';
 import {
+  publicArticlesPageSchema,
   publicArchiveSchema,
   publicArticleIdSchema,
   publicArticleSlugSchema,
@@ -30,6 +32,7 @@ import {
 const router = Router();
 
 router.get('/home', getHome);
+router.get('/articles', validateQuerySchema(publicArticlesPageSchema), listPublicArticles);
 router.get('/categories', getCategories);
 router.get('/featured', getFeatured);
 router.get('/latest', getLatest);
